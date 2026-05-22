@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta
+http-equiv="Content-Security-Policy"
+content="
+default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;
+img-src 'self' data: https: blob:;
+media-src 'self' data: https: blob:;
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+font-src https://fonts.gstatic.com data:;
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com;
+connect-src *;
+">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Prep Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+function exportAttemptLogs(){
+    const csvRows = [
+        ['Date','Test','Score']
+    ];
+
+    results.forEach(r=>{
+        csvRows.push([
+            new Date(r.timestamp || Date.now()).toLocaleString(),
+            r.testName || 'Test',
+            r.score || 0
+        ]);
+    });
+
+    const csv = csvRows.map(r=>r.join(',')).join('\n');
+
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+
+    const ts = new Date().toISOString().replace(/[:.]/g,'');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attempt_logs_${ts}.csv`;
+    a.click();
+}
+
+function exportAttemptJSON(){
+    if(!results.length){
+        alert('No attempts found.');
+        return;
+    }
+
+    const latest = results[results.length-1];
+
+    const blob = new Blob(
+        [JSON.stringify(latest,null,2)],
+        {type:'application/json'}
+    );
+
+    const a = document.createElement('a');
+
+    const ts = new Date().toISOString().replace(/[:.]/g,'');
+    a.href = URL.createObjectURL(blob);
+    a.download = `log_${ts}.json`;
+    a.click();
+}
+
+</script>
+<style>
+/* ═══════════════════════════════════════
+   THEME TOKENS (LIGHT & DARK OLED)
+═══════════════════════════════════════ */
+:root {
+  /* LIGHT THEME (Default) */
+  --bg: #f8fafc; --bg2: #ffffff; --bg3: #f1f5f9; --bg4: #e2e8f0;
+  --txt: #0f172a; --txt2: #334155; --txt3: #64748b; --txt4: #94a3b8;
+  --bd: #e2e8f0; --bd2: #cbd5e1;
+  --acc: #10b981; --acc2: #059669; --acc3: #d1fae5;
+  --red: #ef4444; --red2: #fee2e2; --yel: #f59e0b; --yel2: #fef3c7;
+  --blu: #3b82f6; --blu2: #dbeafe;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif;
+  --rad: 8px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] {
+  /* PITCH BLACK OLED THEME */
+  --bg: #000000; --bg2: #0a0a0a; --bg3: #141414; --bg4: #1f1f1f;
+  --txt: #ffffff; --txt2: #d4d4d4; --txt3: #a3a3a3; --txt4: #737373;
+  --bd: #222222; --bd2: #333333;
+  --acc: #10b981; --acc2: #059669; --acc3: #022c22;
+  --red: #ef4444; --red2: #450a0a; --yel: #f59e0b; --yel2: #451a03;
+  --blu: #3b82f6; --blu2: #1e3a8a;
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.6);
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;transition:background 0.3s, color 0.3s;}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--txt3)}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+.nav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 24px;height:56px;position:sticky;top:0;z-index:300;gap:12px;transition:background 0.3s, border-color 0.3s;}
+.logo{font-family:var(--sans);font-size:14px;font-weight:700;color:var(--acc);letter-spacing:1px;margin-right:24px;white-space:nowrap}
+.logo span{color:var(--txt2);font-weight:500}
+.ntabs{display:flex;flex:1;height:56px;overflow-x:auto;gap:4px}
+.ntabs::-webkit-scrollbar{height:0}
+.ntab{background:none;border:none;border-bottom:2px solid transparent;color:var(--txt3);padding:0 16px;height:56px;cursor:pointer;font-size:13px;font-weight:500;font-family:var(--sans);transition:all .15s;white-space:nowrap;}
+.ntab:hover{color:var(--txt)}
+.ntab.active{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* ═══════════════════════════════════════
+   PAGES & CARDS
+═══════════════════════════════════════ */
+.page{display:none;padding:28px 24px;max-width:1400px;margin:0 auto;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+.ph-l h1{font-size:22px;font-weight:600;color:var(--txt);letter-spacing:-0.5px}
+.ph-l p{font-size:13px;color:var(--txt3);margin-top:4px}
+.ph-r{display:flex;gap:8px;align-items:center}
+
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rad);overflow:hidden;margin-bottom:16px;transition:background 0.3s, border-color 0.3s;}
+.card-hd{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--bg3);transition:background 0.3s;}
+.card-title{font-size:12px;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.5px;flex:1;font-family:var(--mono)}
+.card-body{padding:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+@media(max-width:900px){.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g2, .g3, .g4{grid-template-columns:1fr}}
+
+/* ═══════════════════════════════════════
+   FORMS & BUTTONS
+═══════════════════════════════════════ */
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--bd2);color:var(--txt);border-radius:var(--rad);padding:9px 12px;font-size:13px;outline:none;width:100%;transition:border-color .15s, background 0.3s, color 0.3s;font-family:var(--sans);}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--acc);}
+.fg input[type="password"]{font-family:var(--mono)}
+
+.btn{padding:8px 16px;border-radius:var(--rad);border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-p{background:var(--acc);color:#000;font-weight:600}.btn-p:hover{background:var(--acc2)}
+.btn-o{background:var(--bg2);border:1px solid var(--bd2);color:var(--txt)}.btn-o:hover{border-color:var(--acc);color:var(--acc)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge-n{background:var(--bg4);color:var(--txt2)}
+.badge-y{background:var(--yel2);color:var(--yel);border:1px solid var(--yel)}
+
+/* ═══════════════════════════════════════
+   TEST ENGINE & MEDIA
+═══════════════════════════════════════ */
+#test-engine{display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;flex-direction:column}
+#test-engine.active{display:flex}
+.te-header{display:flex;align-items:center;padding:0 24px;height:60px;background:var(--bg2);border-bottom:1px solid var(--bd);}
+.te-title{font-size:15px;font-weight:600;flex:1}
+.te-timer{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--acc);margin-right:20px}
+.te-progress-bar{height:4px;background:var(--bd)}
+.te-progress-fill{height:100%;background:var(--acc);transition:width .3s}
+.te-body{flex:1;overflow-y:auto;padding:32px 24px;max-width:800px;margin:0 auto;width:100%}
+
+.media-container{margin-bottom:20px;border-radius:var(--rad);overflow:hidden;border:1px solid var(--bd);background:var(--bg2);padding:12px;display:flex;justify-content:center;align-items:center}
+.media-container img{max-width:100%;height:auto;border-radius:4px;max-height:400px}
+.media-container video{max-width:100%;border-radius:4px;max-height:400px}
+.media-container audio{width:100%;outline:none}
+
+.te-opt{display:flex;align-items:center;gap:16px;padding:16px;margin-bottom:10px;background:var(--bg2);border:2px solid var(--bd);border-radius:var(--rad);cursor:pointer;transition:all .15s;}
+.te-opt:hover{border-color:var(--bd2);background:var(--bg3)}
+.te-opt.selected{border-color:var(--acc);background:var(--acc3)}
+.te-opt-letter{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;color:var(--txt3)}
+.te-opt.selected .te-opt-letter{border-color:var(--acc);color:var(--acc);background:var(--bg2)}
+.te-opt-text{font-size:15px;color:var(--txt);flex:1}
+
+/* ═══════════════════════════════════════
+   RESULTS & AI CHAT
+═══════════════════════════════════════ */
+.result-row{padding:14px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s;}
+.result-row:hover{background:var(--bg3)}
+.result-row.active{background:var(--acc3);border-left:3px solid var(--acc)}
+
+.ai-chat{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  flex:1;
+  min-height:200px;
+  max-height:350px; 
+  overflow-y:auto;
+  padding:8px;
+  scroll-behavior:smooth;
+}
+
+.ai-msg{display:flex;gap:10px;align-items:flex-start}
+.ai-msg.user{flex-direction:row-reverse}
+.ai-bubble{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;font-size:13px;line-height:1.6;color:var(--txt);max-width:85%;white-space:pre-wrap;}
+.ai-msg.user .ai-bubble{background:var(--acc3);border-color:var(--acc);color:var(--txt)}
+.ai-avatar{width:28px;height:28px;border-radius:4px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+
+/* STAT BOXES */
+.stat-box {background:var(--bg3);padding:14px;border-radius:var(--rad);border:1px solid var(--bd);display:flex;flex-direction:column;justify-content:center;}
+.stat-box-lbl {font-size:11px;color:var(--txt3);text-transform:uppercase;font-family:var(--mono);margin-bottom:6px;font-weight:600;}
+.stat-box-val {font-size:28px;font-weight:600;font-family:var(--mono);line-height:1;}
+.stat-mini-row {display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd);}
+
+/* LOADING DOTS */
+.ai-loading{display:flex;gap:4px;align-items:center;padding:4px 0}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--txt3);animation:dot-bounce .8s infinite}
+.ai-dot:nth-child(2){animation-delay:.16s}.ai-dot:nth-child(3){animation-delay:.32s}
+@keyframes dot-bounce{0%,80%,100%{transform:scale(1)}40%{transform:scale(1.4)}}
+
+/* CODE BLOCKS */
+pre{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rad);padding:12px;font-family:var(--mono);font-size:12px;overflow-x:auto;color:var(--txt2);line-height:1.5;margin:8px 0}
+code{font-family:var(--mono);background:var(--bg3);padding:2px 4px;border-radius:3px;font-size:12px}
+</style>
+
+
+<style id="fix-dark-inputs">
+/* LIGHT THEME INPUTS */
+input,
+textarea,
+select{
+    background:var(--bg) !important;
+    color:var(--txt) !important;
+    border:1px solid var(--bd2) !important;
+    transition:
+      background .25s,
+      color .25s,
+      border-color .25s;
+}
+
+/* DARK THEME INPUTS */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select{
+    background:#11151c !important;
+    color:#f5f7fa !important;
+    border:1px solid #2f3642 !important;
+}
+
+/* PLACEHOLDERS */
+input::placeholder,
+textarea::placeholder{
+    color:var(--txt3) !important;
+}
+
+/* SMOOTH THEME TRANSITIONS */
+body,
+.card,
+.nav,
+input,
+textarea,
+select,
+button{
+    transition:
+      background .25s,
+      color .25s,
+      border-color .25s;
+}
+</style>
+
+
+
+<style id="v7-additions">
+/* ── INPUTS consistent across themes ── */
+input,textarea,select{background:var(--bg)!important;color:var(--txt)!important;border:1px solid var(--bd2)!important;transition:background .25s,color .25s,border-color .25s}
+[data-theme="dark"] input,[data-theme="dark"] textarea,[data-theme="dark"] select{background:#111!important;color:#f5f7fa!important;border:1px solid #2f3642!important}
+input::placeholder,textarea::placeholder{color:var(--txt3)!important}
+
+/* ── PARSE TABS ── */
+.parse-tab{flex:1;padding:6px 10px;border:none;border-radius:6px;background:none;color:var(--txt3);cursor:pointer;font-size:12px;font-weight:500;font-family:var(--sans);transition:all .15s;text-align:center}
+.parse-tab:hover{color:var(--txt)}.parse-tab-active{background:var(--bg2);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.parsed-q-card{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:7px;position:relative}
+.parsed-q-card:last-child{margin-bottom:0}
+.parsed-q-text{font-size:12px;font-weight:500;color:var(--txt);margin-bottom:6px;line-height:1.5}
+.parsed-q-opts{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.parsed-q-opt{font-size:11px;color:var(--txt3);padding:2px 6px;border-radius:4px}
+.parsed-q-opt.correct{color:var(--acc);background:var(--acc3);font-weight:600}
+.parsed-q-actions{display:flex;gap:5px;margin-top:7px}
+.parse-log-line{display:block;line-height:1.9}
+.parse-log-ok{color:var(--acc)}.parse-log-warn{color:var(--yel)}.parse-log-err{color:var(--red)}
+
+/* ── STREAK LAYOUT (compact) ── */
+.streak-layout{display:grid;grid-template-columns:1fr 210px;gap:12px;margin-top:14px}
+@media(max-width:860px){.streak-layout{grid-template-columns:1fr}}
+.streak-card-modern,.streak-summary-modern{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.calendar-day{aspect-ratio:1;border-radius:5px;border:1px solid var(--bd);background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:10px;font-weight:500;transition:background .2s,color .2s;cursor:default}
+.calendar-day.cal-header{background:transparent!important;border-color:transparent!important;font-size:9px;font-weight:600;color:var(--txt4)!important;text-transform:uppercase;letter-spacing:.03em;font-family:var(--mono)}
+.calendar-day.cal-empty{background:transparent!important;border-color:transparent!important}
+.calendar-day.cal-today{border-color:var(--acc)!important;box-shadow:0 0 0 1px var(--acc)}
+.calendar-day.cal-l1{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}
+.calendar-day.cal-l2{background:#93c5fd;color:#1e3a8a;border-color:#60a5fa}
+.calendar-day.cal-l3{background:#3b82f6;color:#fff;border-color:#2563eb}
+.calendar-day.cal-l4{background:#1d4ed8;color:#fff;border-color:#1e3a8a}
+[data-theme="dark"] .calendar-day.cal-l1{background:#1e3a8a;color:#bfdbfe;border-color:#1d4ed8}
+[data-theme="dark"] .calendar-day.cal-l2{background:#1d4ed8;color:#dbeafe;border-color:#2563eb}
+[data-theme="dark"] .calendar-day.cal-l3{background:#2563eb;color:#fff;border-color:#3b82f6}
+[data-theme="dark"] .calendar-day.cal-l4{background:#3b82f6;color:#fff;border-color:#60a5fa}
+.summary-value{font-size:34px;color:var(--acc);font-weight:700;line-height:1;font-family:var(--mono)}
+.summary-label{color:var(--txt3);font-size:10px;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono)}
+.summary-block{margin-bottom:12px}
+.streak-tip{background:var(--acc3);border-radius:8px;padding:10px;color:var(--txt2);font-size:12px;line-height:1.5}
+
+/* ── MINI HEATMAP ── */
+.streak-cell{aspect-ratio:1;border-radius:4px;border:1px solid var(--bd2);background:var(--bg4)}
+.streak-cell.active-1{background:#dbeafe!important;border-color:#bfdbfe!important}
+.streak-cell.active-2{background:#93c5fd!important;border-color:#60a5fa!important}
+.streak-cell.active-3{background:#3b82f6!important;color:#fff!important;border-color:#2563eb!important}
+.streak-cell.active-4{background:#1d4ed8!important;color:#fff!important;border-color:#1e3a8a!important}
+[data-theme="dark"] .streak-cell{background:#1f2937!important;border-color:#374151!important}
+[data-theme="dark"] .streak-cell.active-1{background:#1e3a8a!important;border-color:#1d4ed8!important}
+[data-theme="dark"] .streak-cell.active-2{background:#1d4ed8!important;border-color:#2563eb!important}
+[data-theme="dark"] .streak-cell.active-3{background:#2563eb!important;border-color:#3b82f6!important}
+[data-theme="dark"] .streak-cell.active-4{background:#3b82f6!important;border-color:#60a5fa!important}
+
+/* ── ANALYTICS TABLE ── */
+#v7-analytics-card table{width:100%;border-collapse:collapse}
+#v7-analytics-card td{padding:9px 4px;border-bottom:1px solid var(--bd);color:var(--txt2);font-size:12px}
+#v7-analytics-card tr:last-child td{border-bottom:none}
+.empty-state{color:var(--txt3)!important;font-style:italic}.metric-empty{color:var(--txt3)!important}
+body,.card,.nav,input,textarea,select,button{transition:background .25s,color .25s,border-color .25s}
+</style>
+</head>
+<body data-theme="dark">
+
+<nav class="nav">
+  <div class="logo">EXAM<span>·PREP</span></div>
+  <div class="ntabs">
+    <button class="ntab active" onclick="nav('home')">📋 Dashboard</button>
+    <button class="ntab" onclick="nav('builder')">⚙ Question Builder</button>
+    <button class="ntab" onclick="nav('results')">📊 Results & Analytics</button>
+    <button class="ntab" onclick="nav('integration')">🔌 AI Integrations</button>
+    <button class="ntab" onclick="nav('help')">? Help</button>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <button class="btn btn-o btn-sm" id="theme-toggle" onclick="toggleTheme()" style="font-family:var(--mono);font-weight:600;">☀ Light Mode</button>
+  </div>
+</nav>
+
+<div id="test-engine">
+  <div class="te-header">
+    <span class="te-title" id="te-test-name">—</span>
+    <span class="te-timer" id="te-timer">00:00</span>
+    <button class="btn btn-o btn-sm" onclick="endTest()">End Exam</button>
+  </div>
+  <div class="te-progress-bar"><div class="te-progress-fill" id="te-prog"></div></div>
+  <div class="te-body" id="te-body"></div>
+  <div class="te-header" style="justify-content:space-between;border-top:1px solid var(--bd);border-bottom:none">
+    <button class="btn btn-o" onclick="teNav(-1)">← Previous</button>
+    <div id="te-qnav" style="display:flex;gap:4px;overflow-x:auto;padding:0 12px"></div>
+    <button class="btn btn-p" onclick="teNav(1)">Next →</button>
+  </div>
+</div>
+
+<div class="page active" id="page-home">
+  <div class="ph">
+    <div class="ph-l"><h1>Dashboard</h1><p>Manage and launch your offline mock exams</p></div>
+    <div class="ph-r">
+      <button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import CSV/JSON</button>
+      <input type="file" id="import-file" accept=".csv,.json" style="display:none" onchange="importLibrary(this)">
+      <button class="btn btn-o btn-sm" onclick="exportLibrary()">📤 Export Tests</button>
+      <button class="btn btn-o btn-sm" style="border-color:var(--red);color:var(--red);margin-left:8px;" onclick="factoryReset()">⚠️ Clear All Data</button>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Test Library</div><span id="test-count-badge" class="badge badge-n">0</span></div>
+      <div id="test-list" class="card-body" style="padding:0;max-height:400px;overflow-y:auto"></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">Quick Launch</div></div>
+        <div class="card-body">
+<div style="
+margin-top:14px;
+padding:14px;
+border:1px dashed var(--bd2);
+border-radius:10px;
+color:var(--txt3);
+font-size:13px;
+background:rgba(255,255,255,0.02)
+">
+Analytics will appear after you complete your first few tests.
+</div>
+
+          <div class="fg"><label>Select Test</label><select id="qs-select"></select></div>
+          <div class="g2">
+            <div class="fg"><label>Duration (min)</label><input type="number" id="qs-duration" value="30"></div>
+            <div class="fg"><label>Question Limit</label><input type="number" id="qs-count" value="20"></div>
+          </div>
+          <button class="btn btn-p" style="width:100%;margin-top:10px" onclick="startTest()">▶ Begin Exam</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-builder">
+  <div class="ph">
+    <div class="ph-l"><h1>Question Builder</h1><p>Author questions manually</p></div>
+    <div class="ph-r"><button class="btn btn-p" onclick="saveBuilderAsTest()">💾 Save to Library</button></div>
+  </div>
+  <div class="g2">
+    <div>
+      
+      <!-- ═══ AI QUESTION GENERATOR ═══ -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="card-title">✨ AI Question Generator</div>
+          <span class="badge badge-n" style="font-size:10px">needs API key</span>
+        </div>
+        <div class="card-body">
+          <div class="fg">
+            <label>Topic / Subject</label>
+            <input type="text" id="ai-gen-topic" placeholder="e.g. Photosynthesis · French Revolution · Quadratic equations">
+          </div>
+          <div class="g2">
+            <div class="fg">
+              <label>No. of Questions</label>
+              <select id="ai-gen-count">
+                <option value="3">3</option><option value="5" selected>5</option>
+                <option value="10">10</option><option value="15">15</option><option value="20">20</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Difficulty</label>
+              <select id="ai-gen-diff">
+                <option value="easy">Easy</option><option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option><option value="mixed">Mixed</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Question Style</label>
+            <select id="ai-gen-style">
+              <option value="conceptual">Conceptual understanding</option>
+              <option value="factual">Factual recall</option>
+              <option value="application">Application / problem solving</option>
+              <option value="analytical">Analytical / inference</option>
+              <option value="exam-style" selected>Exam-style (mixed)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Context / Notes (optional)</label>
+            <textarea id="ai-gen-context" style="min-height:70px" placeholder="Paste notes or syllabus text. AI will base questions on this content instead of general knowledge."></textarea>
+          </div>
+          <button class="btn btn-p" style="width:100%" id="ai-gen-btn" onclick="generateFromAI()">✨ Generate Questions</button>
+          <div id="ai-gen-status" style="display:none;margin-top:8px;font-size:12px;font-family:var(--mono);padding:6px 10px;background:var(--bg3);border-radius:6px;line-height:1.5"></div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:8px;line-height:1.6">Configure your AI provider in the <strong>Integrations</strong> tab first. Questions are added directly to the preview.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">Manual Authoring</div></div>
+        <div class="card-body">
+          <div class="fg"><label>Question Text</label><textarea id="bq-text" placeholder="Type question..."></textarea></div>
+          <div class="g2">
+            <div class="fg"><label>Media Type</label>
+              <select id="bq-mtype">
+                <option value="auto">Auto-detect</option>
+                <option value="image">Image</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+            <div class="fg"><label>Media Link (Optional)</label><input type="text" id="bq-media" placeholder="./media/audio1.mp3 or URL"></div>
+          </div>
+          <div style="margin:16px 0" id="bq-opts"></div>
+          <button class="btn btn-o" style="width:100%" onclick="addBuilderQ()">+ Add Question</button>
+        </div>
+      </div>
+      <!-- ═══ TEXT / DOCUMENT IMPORT ═══ -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="card-title">📄 Text / Document Import</div>
+          <span class="badge badge-n" id="parsed-q-count" style="display:none">0 found</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:3px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:3px;margin-bottom:12px">
+            <button id="ptab-paste" class="parse-tab parse-tab-active" onclick="switchParseTab('paste')">📋 Paste Text</button>
+            <button id="ptab-file"  class="parse-tab"                  onclick="switchParseTab('file')">📂 Upload File</button>
+            <button id="ptab-ai"    class="parse-tab"                  onclick="switchParseTab('ai')">✨ AI Extract</button>
+          </div>
+          <!-- PASTE -->
+          <div id="ptab-content-paste">
+            <div class="fg">
+              <label>Paste question paper text</label>
+              <textarea id="parse-raw-text" style="min-height:130px;font-family:var(--mono);font-size:12px" placeholder="Paste any question paper text. Supports formats like:&#10;&#10;Q1. What is photosynthesis?&#10;(A) Cell division   (B) Making food from sunlight&#10;(C) Respiration     (D) None of the above&#10;Answer: B&#10;&#10;1. What is 2+2?&#10;a) 3  b) 4  c) 5  d) 6  Ans: b"></textarea>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p" style="flex:1" onclick="parseTextToQuestions()">⚡ Parse Questions</button>
+              <button class="btn btn-o bsm" onclick="document.getElementById('parse-raw-text').value=''">Clear</button>
+            </div>
+          </div>
+          <!-- FILE -->
+          <div id="ptab-content-file" style="display:none">
+            <div style="border:2px dashed var(--bd2);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;background:var(--bg3);position:relative;transition:all .2s" id="parse-dropzone"
+              ondragover="event.preventDefault();this.style.borderColor='var(--acc)'"
+              ondragleave="this.style.borderColor='var(--bd2)'"
+              ondrop="handleParseFileDrop(event)">
+              <input type="file" id="parse-file-input" accept=".txt,.md,.csv,.json,.html,.rtf"
+                style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"
+                onchange="handleParseFileSelect(this)">
+              <div style="font-size:26px;margin-bottom:7px">📁</div>
+              <div style="font-size:13px;font-weight:600;color:var(--txt)">Drop a file or click to browse</div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">.txt · .md · .csv · .rtf · .html</div>
+            </div>
+            <div id="parse-file-name" style="font-size:12px;color:var(--txt3);margin-top:8px;font-family:var(--mono)"></div>
+            <button class="btn btn-p" style="width:100%;margin-top:10px" onclick="parseTextToQuestions()">⚡ Parse File Content</button>
+          </div>
+          <!-- AI -->
+          <div id="ptab-content-ai" style="display:none">
+            <div class="fg">
+              <label>Source text (paste or load file first)</label>
+              <textarea id="parse-ai-text" style="min-height:100px;font-family:var(--mono);font-size:12px" placeholder="Paste raw text from your question paper. AI will identify and structure MCQs even with inconsistent formatting."></textarea>
+            </div>
+            <div class="fg">
+              <label>Extraction hints (optional)</label>
+              <input type="text" id="parse-ai-hint" placeholder="e.g. 'options are 1/2/3/4' · 'answers at end of paper'">
+            </div>
+            <button class="btn btn-p" style="width:100%" onclick="aiExtractQuestions()">🤖 Extract with AI</button>
+            <div style="font-size:11px;color:var(--txt3);margin-top:8px">Uses your configured AI provider. Requires an API key.</div>
+          </div>
+          <!-- Log -->
+          <div id="parse-log" style="display:none;margin-top:12px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--txt2);max-height:120px;overflow-y:auto;line-height:1.8"></div>
+          <!-- Preview -->
+          <div id="parsed-preview-wrap" style="display:none;margin-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:12px;font-weight:600;color:var(--txt)">Parsed Questions</span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-o bsm" onclick="clearParsedPreview()">✕ Clear</button>
+                <button class="btn btn-p bsm" onclick="addAllParsedQuestions()">+ Add All</button>
+              </div>
+            </div>
+            <div id="parsed-preview" style="max-height:280px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">Test Configuration & Preview</div><span id="preview-count" class="badge badge-n">0</span></div>
+        <div class="card-body" style="border-bottom:1px solid var(--bd)">
+          <div class="g2">
+            <div class="fg"><label>Test Title</label><input type="text" id="b-name" placeholder="e.g. Biology Unit 1"></div>
+            <div class="fg"><label>Category</label><input type="text" id="b-cat" placeholder="e.g. Science"></div>
+          </div>
+        </div>
+        <div id="builder-preview" class="card-body" style="background:var(--bg);max-height:550px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-results">
+  <div class="ph"><div class="ph-l"><h1>Results & Analytics</h1><p>Review attempts, track progress, and get AI feedback</p></div></div>
+  
+  <div class="card" id="analytics-overview">
+    <div class="card-hd">
+      <div class="card-title">Performance Overview</div>
+      <select id="ana-cat-filter" onchange="renderAnalyticsCharts()" style="background:var(--bg);border:1px solid var(--bd2);color:var(--txt);padding:4px 8px;border-radius:4px;font-size:11px;outline:none;font-family:var(--sans);">
+        <option value="">All Categories</option>
+      </select>
+    </div>
+    <div class="card-body">
+      <div class="g4" style="margin-bottom: 24px;">
+        <div class="stat-box">
+          <div class="stat-box-lbl">Total Attempts</div>
+          <div class="stat-box-val" id="stat-total-tests">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-lbl">Average Score</div>
+          <div class="stat-box-val" id="stat-avg-score">0%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-lbl">True Accuracy <span style="color:var(--txt4);text-transform:none;font-weight:normal;">(Answered only)</span></div>
+          <div class="stat-box-val" id="stat-accuracy" style="color:var(--acc);">0%</div>
+        </div>
+        <div class="stat-box" style="padding-top:8px;padding-bottom:8px;">
+          <div class="stat-box-lbl" style="margin-bottom:2px;">Question Breakdown</div>
+          <div class="stat-mini-row" style="border:none;margin-top:0;padding-top:0;">
+            <span style="color:var(--txt3);">Seen</span><span id="stat-q-total">0</span>
+          </div>
+          <div class="stat-mini-row">
+            <span style="color:var(--acc);">Correct</span><span id="stat-q-correct">0</span>
+          </div>
+          <div class="stat-mini-row">
+            <span style="color:var(--red);">Wrong</span><span id="stat-q-wrong">0</span>
+          </div>
+          <div class="stat-mini-row">
+            <span style="color:var(--yel);">Skipped</span><span id="stat-q-skip">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="g2">
+        <div style="height:220px;position:relative;"><canvas id="chart-trend"></canvas></div>
+        <div style="height:220px;position:relative;"><canvas id="chart-tests"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  
+<!-- V7 ANALYTICS DASHBOARD -->
+<div class="card" id="v7-analytics-card" style="margin-top:16px">
+<div class="card-hd">
+<div class="card-title">Performance Intelligence Dashboard</div>
+</div>
+
+<div class="card-body">
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+
+<div class="stat-box">
+<div class="stat-box-lbl">Current Streak</div>
+<div class="stat-box-val" id="metric-streak" style="color:var(--txt2)">0</div>
+<div class="stat-mini-row"><span>Days</span><span>🔥</span></div>
+</div>
+
+<div class="stat-box">
+<div class="stat-box-lbl">Improvement</div>
+<div class="stat-box-val" id="metric-improvement">—</div>
+<div class="stat-mini-row"><span>vs last attempt</span><span style="color:var(--acc)">↑</span></div>
+</div>
+
+<div class="stat-box">
+<div class="stat-box-lbl">Best Category</div>
+<div class="stat-box-val" id="metric-best-category">—</div>
+<div class="stat-mini-row"><span>highest avg score</span><span style="color:var(--acc)">★</span></div>
+</div>
+
+<div class="stat-box">
+<div class="stat-box-lbl">Weakest Topic</div>
+<div class="stat-box-val" id="metric-weak-topic" style="color:var(--red)">—</div>
+<div class="stat-mini-row"><span>most missed</span><span>⚠</span></div>
+</div>
+
+</div>
+
+<div class="card" style="background:var(--bg3);margin-bottom:18px">
+<div class="card-body">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<h3 style="font-size:13px;font-weight:600">Last 28 Days</h3>
+<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3)">
+  <span>Less</span>
+  <div style="width:10px;height:10px;border-radius:2px;background:#dbeafe"></div>
+  <div style="width:10px;height:10px;border-radius:2px;background:#93c5fd"></div>
+  <div style="width:10px;height:10px;border-radius:2px;background:#3b82f6"></div>
+  <div style="width:10px;height:10px;border-radius:2px;background:#1d4ed8"></div>
+  <span>More</span>
+</div>
+</div>
+<div id="mini-heatmap" style="display:grid;grid-template-columns:repeat(14,1fr);gap:4px"></div>
+<div id="mini-heatmap-msg" style="margin-top:8px;color:var(--txt3);font-size:11px">Take tests to see your activity here.</div>
+</div>
+</div>
+
+<div class="g2">
+
+<div class="card">
+<div class="card-hd">
+<div class="card-title">Category Mastery</div>
+</div>
+<div class="card-body">
+<table style="width:100%;font-size:13px">
+<tr><td>—</td><td>—</td><td style="color:var(--acc)">No data</td></tr>
+<tr><td>Math</td><td>—</td><td style="color:var(--acc)">No data</td></tr>
+<tr><td>—</td><td>—</td><td style="color:var(--yel)">No data</td></tr>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-hd">
+<div class="card-title">Weakness Persistence</div>
+</div>
+<div class="card-body">
+<table style="width:100%;font-size:13px">
+<tr><td>—</td><td style="color:var(--red)">No data</td></tr>
+<tr><td>Organic —</td><td style="color:var(--red)">No data</td></tr>
+<tr><td>—</td><td style="color:var(--yel)">No data</td></tr>
+</table>
+</div>
+</div>
+
+</div>
+
+<div class="card" style="margin-top:16px">
+<div class="card-hd">
+<div class="card-title">Export Attempt Logs</div>
+</div>
+<div class="card-body">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn btn-p" onclick="exportAttemptLogs()">📤 Export Full CSV</button>
+<button class="btn btn-o" onclick="exportAttemptJSON()">🧾 Export Latest Attempt</button>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+
+<!-- ═══ STUDY STREAK CALENDAR ═══ -->
+<div class="streak-layout" id="streak-layout-section" style="margin-top:16px">
+  <div class="streak-card-modern">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--acc);letter-spacing:.08em;font-family:var(--mono)">📅 STUDY STREAK CALENDAR</div>
+      <div style="display:flex;align-items:center;gap:5px;color:var(--txt3);font-size:11px">
+        <span>Less</span>
+        <div style="width:11px;height:11px;border-radius:3px;background:#dbeafe;border:1px solid #bfdbfe"></div>
+        <div style="width:11px;height:11px;border-radius:3px;background:#93c5fd;border:1px solid #60a5fa"></div>
+        <div style="width:11px;height:11px;border-radius:3px;background:#3b82f6;border:1px solid #2563eb"></div>
+        <div style="width:11px;height:11px;border-radius:3px;background:#1d4ed8;border:1px solid #1e3a8a"></div>
+        <span>More</span>
+      </div>
+    </div>
+    <div id="streak-month-label" style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--txt)"></div>
+    <div class="calendar-grid" id="streak-calendar-grid"></div>
+    <div id="streak-message" style="margin-top:10px;color:var(--txt3);font-size:11px">Complete tests daily to build your streak.</div>
+  </div>
+  <div class="streak-summary-modern">
+    <div class="summary-block">
+      <div class="summary-label">Current Streak</div>
+      <div class="summary-value" id="streak-current">0</div>
+      <div style="color:var(--txt3);font-size:11px;margin-top:3px">days 🔥</div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-label">Longest Streak</div>
+      <div class="summary-value" id="streak-longest">0</div>
+      <div style="color:var(--txt3);font-size:11px;margin-top:3px">days</div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-label">Active Days</div>
+      <div class="summary-value" id="streak-active-days">0</div>
+      <div style="color:var(--txt3);font-size:11px;margin-top:3px">this month</div>
+    </div>
+    <div class="streak-tip" id="streak-tip-text">⭐ Take a test to start your streak.</div>
+  </div>
+</div>
+<div class="g2">
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Attempt History</div></div>
+      <div id="results-list" style="max-height:600px;overflow-y:auto"></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-title">AI Performance Analysis</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;">
+        
+        <div class="g2" style="margin-bottom:8px">
+          <div class="fg"><label>Analysis Model</label>
+            <select id="res-ai-model">
+              <option value="custom">Custom URL (Open-Source / Free APIs)</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="ollama">Ollama (Local)</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </div>
+          <div class="fg"><label>Analysis Focus</label>
+            <select id="res-ai-focus">
+              <option value="full">Full Analysis</option>
+              <option value="weak">Weak Areas Only</option>
+              <option value="time">Time Management</option>
+              <option value="accuracy">Accuracy Patterns</option>
+              <option value="strategy">Strategy Suggestions</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="g2" style="margin-bottom:16px">
+          <div class="fg"><label>Analysis Length</label>
+            <select id="res-ai-length">
+              <option value="short">Short & Simple</option>
+              <option value="detailed">Detailed & Descriptive</option>
+            </select>
+          </div>
+          <div class="fg"><label>Coach Tone</label>
+            <select id="res-ai-tone">
+              <option value="friendly">Friendly & Supportive</option>
+              <option value="critique">Strict Critique</option>
+              <option value="encouraging">Highly Encouraging</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="btn btn-p" style="width:100%" onclick="runAnalysis()">🤖 Analyse Result</button>
+        
+        <div class="ai-chat" id="ai-chat-box">
+          <div style="text-align:center;color:var(--txt3);margin-top:40px;font-size:13px">Select a result from the left, pick your configured API model, and click Analyse Result.</div>
+        </div>
+        
+        <div style="display:flex;gap:8px;margin-top:10px;padding-top:14px;border-top:1px solid var(--bd);">
+          <input type="text" id="ai-chat-input" class="fg" style="margin:0;flex:1" placeholder="Ask follow-up questions..." onkeypress="if(event.key==='Enter') sendAIChat()">
+          <button class="btn btn-p" onclick="sendAIChat()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-integration">
+  <div class="ph"><div class="ph-l"><h1>AI Integrations</h1><p>Configure API keys and open-source links for test generation and analytics. Stored locally.</p></div></div>
+  <div class="g3">
+    
+    <div class="card"><div class="card-hd"><div class="card-title">🌐 Custom Open-Source API</div></div><div class="card-body">
+      <p style="font-size:11px;color:var(--txt3);margin-bottom:12px">Link to any OpenAI-compatible free API (like Pollinations), HuggingFace endpoint, or LM Studio without needing an auth key.</p>
+      <div class="fg"><label>Endpoint URL (Requires CORS)</label><input type="text" id="api-custom-url" placeholder="https://text.pollinations.ai/"></div>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Save Link</button>
+    </div></div>
+
+    <div class="card"><div class="card-hd"><div class="card-title">✨ Google Gemini</div></div><div class="card-body">
+      <div class="fg"><label>API Key</label><input type="password" id="api-gemini-key" placeholder="AIzaSy..."></div>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Save Key</button>
+    </div></div>
+    
+    <div class="card"><div class="card-hd"><div class="card-title">🦙 Local AI (Ollama)</div></div><div class="card-body">
+      <div class="fg"><label>Endpoint URL</label><input type="text" id="api-ollama-url" value="http://localhost:11434"></div>
+      <div class="fg"><label>Model Name</label><input type="text" id="api-ollama-model" value="llama3"></div>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Save Config</button>
+    </div></div>
+
+    <div class="card"><div class="card-hd"><div class="card-title">🧠 Anthropic (Claude)</div></div><div class="card-body">
+      <div class="fg"><label>API Key</label><input type="password" id="api-anthropic-key" placeholder="sk-ant-..."></div>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Save Key</button>
+    </div></div>
+
+    <div class="card"><div class="card-hd"><div class="card-title">🟢 OpenAI</div></div><div class="card-body">
+      <div class="fg"><label>API Key</label><input type="password" id="api-openai-key" placeholder="sk-..."></div>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Save Key</button>
+    </div></div>
+
+  </div>
+</div>
+
+<div class="page" id="page-help">
+  <div class="ph"><div class="ph-l"><h1>Documentation & Guides</h1></div></div>
+  <div class="g2">
+    
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Importing & Exporting Data</div></div>
+      <div class="card-body text-sm" style="line-height:1.6;color:var(--txt2);font-size:13px">
+        <p><strong>Exporting:</strong> Click "Export Tests" on the Dashboard. This downloads your entire library as a `.json` file, which is useful for backing up or sharing with others.</p>
+        <p style="margin-top:12px"><strong>Importing:</strong> Click "Import CSV/JSON" on the Dashboard. You can upload previously exported JSON files, or bulk-import questions via CSV.</p>
+        <p style="margin-top:12px"><strong>CSV Format (Headers required):</strong></p>
+        <pre>question,option_a,option_b,option_c,option_d,correct,mediaUrl
+What is 2+2?,1,2,3,4,D,
+Identify the sound.,Car,Bird,Dog,Cat,B,./media/bird.mp3</pre>
+        <p><em>Note: 'correct' must be A, B, C, or D.</em></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Solving the Media Embedding Problem</div></div>
+      <div class="card-body text-sm" style="line-height:1.6;color:var(--txt2);font-size:13px">
+        <p>Because this platform operates as a single offline HTML file, it relies on the browser's `localStorage` to save tests. This storage has a strict <strong>5MB limit</strong>.</p>
+        <p style="margin-top:12px">If we tried to embed heavy images or audio directly into the database (using Base64 encoding), the app would crash instantly.</p>
+        <p style="margin-top:12px"><strong>The Solution: Local File Linking</strong></p>
+        <ol style="margin-left:20px;margin-top:8px">
+          <li>Create a folder on your computer (e.g. <code>ExamPlatform</code>).</li>
+          <li>Put this HTML file inside it.</li>
+          <li>Create a subfolder named <code>media</code> next to the HTML file.</li>
+          <li>Place your files there (e.g. <code>audio1.mp3</code>).</li>
+          <li>In the Question Builder, under "Media Link", type: <code>./media/audio1.mp3</code>.</li>
+        </ol>
+        <p style="margin-top:12px">Alternatively, you can just use public URLs (e.g., <code>https://imgur.com/...png</code>), which requires an internet connection during the exam.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-title">How to Use AI Integrations</div></div>
+      <div class="card-body text-sm" style="line-height:1.6;color:var(--txt2);font-size:13px">
+        <p>Connect AI models to generate questions and analyze your performance.</p>
+        <p style="margin-top:12px"><strong>1. Setup:</strong> Go to the 🔌 <strong>AI Integrations</strong> tab. Enter your API keys for Cloud models (OpenAI, Gemini, Anthropic), or use the Custom URL for free open-source endpoints like Pollinations.ai. Click <em>'Save Key'</em> (these are securely stored locally on your device).</p>
+        <p style="margin-top:12px"><strong>2. Performance Analysis:</strong> In <strong>Results & Analytics</strong>, select a past attempt from the left panel. Choose your preferred model, focus area, tone, and analysis length. Click <em>'Analyse Result'</em> to get personalized feedback on your weak points.</p>
+        <p style="margin-top:12px"><strong>3. Chat Memory:</strong> After an analysis is generated, you can use the chat box to ask follow-up questions. The AI will remember the context of your test attempt.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Upcoming / Planned Features</div></div>
+      <div class="card-body text-sm" style="line-height:1.6;color:var(--txt2);font-size:13px">
+        <ul style="margin-left:20px;">
+          <li style="margin-bottom:8px"><strong>Document Parsing:</strong> Extract text directly from uploaded PDFs and Word Documents in the AI Builder, rather than needing to copy/paste text.</li>
+          <li style="margin-bottom:8px"><strong>Spaced Repetition (SRS):</strong> Automatically compile incorrectly answered questions into a smart "weakness deck" to re-test you using the Leitner system.</li>
+          <li style="margin-bottom:8px"><strong>Math & LaTeX Support:</strong> Integrate MathJax so engineering and science formulas render perfectly in questions and options.</li>
+          <li style="margin-bottom:8px"><strong>Export to PDF:</strong> Generate a printable, beautiful scorecard and answer review sheet for your offline records.</li>
+          <li><strong>Direct SQLite Support:</strong> A native desktop wrapper (via Tauri) to permanently bypass the 5MB browser storage limits, allowing Gigabytes of test data.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CORE STATE 
+═══════════════════════════════════════ */
+let tests = safeJSONParse('ep_tests_v2', []);
+let results = safeJSONParse('ep_results_v2', []);
+let builderQuestions = [];
+let teState = { test:null, questions:[], answers:{}, current:0, timer:null, startTime:0 };
+let keys = safeJSONParse('ep_keys_v2', {});
+let activeResult = null; 
+let currentAIChatHistory = []; 
+let analyticsCharts = {}; 
+
+/* ═══════════════════════════════════════
+   SECURITY CORE
+═══════════════════════════════════════ */
+const SECURITY = {
+  MAX_TEXT: 2000,
+  MAX_OPTION: 300,
+  MAX_IMPORT_SIZE: 2 * 1024 * 1024,
+  MAX_LOCALSTORAGE: 4500000
+};
+
+function escapeHTML(str='') {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function safeText(value='', max=SECURITY.MAX_TEXT){
+  return escapeHTML(String(value).trim().slice(0,max));
+}
+
+function safeJSONParse(key, fallback){
+  try{
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch(e){
+    return fallback;
+  }
+}
+
+function safeSave(key, value){
+  const serialized = JSON.stringify(value);
+  if(serialized.length > SECURITY.MAX_LOCALSTORAGE){
+    throw new Error('Storage limit exceeded');
+  }
+  localStorage.setItem(key, serialized);
+}
+
+
+function factoryReset() {
+  if(confirm("⚠️ WARNING: This will permanently delete ALL your tests, results, and API configurations. Are you sure?")) {
+    localStorage.removeItem('ep_tests_v2');
+    localStorage.removeItem('ep_results_v2');
+    localStorage.removeItem('ep_keys_v2');
+    localStorage.removeItem('ep_theme');
+    location.reload();
+  }
+}
+
+function nav(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelector(`.ntab[onclick="nav('${id}')"]`).classList.add('active');
+  if(id==='home') renderTestList();
+  if(id==='results') { renderResultsList(); renderAnalyticsCharts(); }
+  if(id==='integration') loadKeys();
+}
+
+/* ═══════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════ */
+function toggleTheme() {
+  const b = document.body;
+  const isDark = b.getAttribute('data-theme') === 'dark';
+  
+  if (isDark) {
+    b.removeAttribute('data-theme');
+    localStorage.setItem('ep_theme', 'light');
+    document.getElementById('theme-toggle').innerHTML = '☾ Dark Mode';
+  } else {
+    b.setAttribute('data-theme', 'dark');
+    localStorage.setItem('ep_theme', 'dark');
+    document.getElementById('theme-toggle').innerHTML = '☀ Light Mode';
+  }
+  
+  // Re-render charts so grid colors match the new theme
+  if(document.getElementById('page-results').classList.contains('active')) {
+    renderAnalyticsCharts();
+  }
+}
+
+function saveTests(){ safeSave('ep_tests_v2', tests); }
+function saveResults(){ safeSave('ep_results_v2', results); }
+
+/* ═══════════════════════════════════════
+   MEDIA RENDERER
+═══════════════════════════════════════ */
+function renderMediaHTML(url, typeOverride) {
+  if(!url) return '';
+  let type = typeOverride || 'auto';
+  if (type === 'auto') {
+    const ext = url.split('.').pop().toLowerCase();
+    if (['mp4','webm','ogg'].includes(ext)) type = 'video';
+    else if (['mp3','wav','aac'].includes(ext) || url.includes('soundhelix')) type = 'audio';
+    else type = 'image';
+  }
+
+  if (type === 'video') return `<video controls><source src="${url}"></video>`;
+  if (type === 'audio') return `<audio controls src="${url}"></audio>`;
+  return `<img src="${url}" alt="Media content" onerror="this.style.display='none'">`;
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    const box = document.getElementById('ai-chat-box');
+    if (box) box.scrollTop = box.scrollHeight;
+  }, 10);
+}
+
+function formatAIResponse(text) {
+  return text
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;') 
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+    .replace(/\*(.*?)\*/g, '<em>$1</em>') 
+    .replace(/### (.*?)\n/g, '<br><strong style="color:var(--acc)">$1</strong><br>') 
+    .replace(/## (.*?)\n/g, '<br><strong style="color:var(--acc)">$1</strong><br>') 
+    .replace(/# (.*?)\n/g, '<br><strong style="color:var(--acc)">$1</strong><br>') 
+    .replace(/\n/g, '<br>'); 
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD / IMPORT / EXPORT
+═══════════════════════════════════════ */
+function renderTestList(){
+  const el = document.getElementById('test-list');
+  const sel = document.getElementById('qs-select');
+  document.getElementById('test-count-badge').textContent = tests.length;
+  
+  let listHtml = '', selHtml = '';
+  tests.forEach((t,i) => {
+    listHtml += `
+      <div style="padding:16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:15px;color:var(--acc)">${t.name}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:4px">${t.category || 'General'} · ${t.questions.length} Questions</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-o btn-sm" style="border-color:var(--red);color:var(--red)" onclick="delTest(${i})">Delete</button>
+        </div>
+      </div>`;
+    selHtml += `<option value="${i}">${t.name} (${t.questions.length} Qs)</option>`;
+  });
+  el.innerHTML = listHtml || '<div style="padding:24px;text-align:center;color:var(--txt3)">No tests in library. Import or build one!</div>';
+  sel.innerHTML = selHtml;
+}
+
+function delTest(i) {
+  if(confirm(`Delete "${tests[i].name}"?`)) {
+    tests.splice(i, 1); saveTests(); renderTestList();
+  }
+}
+
+function exportLibrary() {
+  if(!tests.length) return alert("Nothing to export.");
+  const blob = new Blob([JSON.stringify(tests, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `exam_prep_library_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importLibrary(input) {
+  const f = input.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    if(f.name.endsWith('.json')) {
+      try {
+        const data = JSON.parse(text);
+        const arr = Array.isArray(data) ? data : [data];
+        let added = 0;
+        arr.forEach(t => { if(t.name && t.questions) { tests.push(t); added++; } });
+        saveTests(); renderTestList();
+        alert(`Imported ${added} tests from JSON!`);
+      } catch(err) { alert("Invalid JSON file."); }
+    } else if (f.name.endsWith('.csv')) {
+      parseCSV(text, f.name.replace('.csv',''));
+    }
+  };
+  reader.readAsText(f);
+  input.value = '';
+}
+
+function parseCSV(text, filename) {
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return alert("Empty CSV");
+  const headers = lines[0].toLowerCase().split(',').map(h=>h.trim());
+  const qs = [];
+  const idx = h => headers.indexOf(h);
+  
+  for(let i=1; i<lines.length; i++) {
+    let row = lines[i].split(',').map(c=>c.trim());
+    if(row.length < 6) continue;
+    const qText = row[idx('question')];
+    if(!qText) continue;
+    qs.push({
+      question: qText,
+      options: [row[idx('option_a')]||'A', row[idx('option_b')]||'B', row[idx('option_c')]||'C', row[idx('option_d')]||'D'],
+      correct: 'ABCD'.indexOf((row[idx('correct')]||'A').toUpperCase()),
+      mediaUrl: idx('mediaurl') >= 0 ? row[idx('mediaurl')] : '',
+      mediaType: 'auto'
+    });
+  }
+  if(qs.length) {
+    tests.push({ name: filename, category: 'CSV Import', questions: qs });
+    saveTests(); renderTestList();
+    alert(`Imported ${qs.length} questions from CSV!`);
+  }
+}
+
+/* ═══════════════════════════════════════
+   BUILDER
+═══════════════════════════════════════ */
+function initBuilderOpts(){
+  let h='';
+  ['A','B','C','D'].forEach(l=>{
+    h+=`<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <input type="radio" name="bq-cor" value="${l}" ${l==='A'?'checked':''}>
+      <input type="text" id="bq-opt-${l}" class="fg input" style="flex:1;padding:8px;border:1px solid var(--bd);border-radius:4px" placeholder="Option ${l}">
+    </div>`;
+  });
+  document.getElementById('bq-opts').innerHTML = h;
+}
+
+function addBuilderQ(){
+  const q = {
+    question: document.getElementById('bq-text').value.trim(),
+    mediaUrl: document.getElementById('bq-media').value.trim(),
+    mediaType: document.getElementById('bq-mtype').value,
+    options: ['A','B','C','D'].map(l=>document.getElementById(`bq-opt-${l}`).value.trim()),
+    correct: 'ABCD'.indexOf(document.querySelector('input[name="bq-cor"]:checked').value)
+  };
+  if(!q.question || q.options.some(o=>!o)) return alert("Fill all question text and option fields.");
+  builderQuestions.push(q);
+  document.getElementById('bq-text').value='';
+  document.getElementById('bq-media').value='';
+  ['A','B','C','D'].forEach(l=>document.getElementById(`bq-opt-${l}`).value='');
+  renderBuilderPreview();
+}
+
+function renderBuilderPreview(){
+  document.getElementById('preview-count').textContent = builderQuestions.length;
+  let h = '';
+  builderQuestions.forEach((q,i)=>{
+    h+=`<div style="background:var(--bg2);padding:16px;border:1px solid var(--bd);border-radius:6px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:4px">Q${i+1}</div>
+      <div style="font-weight:500;margin-bottom:8px;font-size:14px">${q.question}</div>
+      ${q.mediaUrl ? `<div class="media-container" style="padding:6px;margin-bottom:10px">${renderMediaHTML(q.mediaUrl, q.mediaType)}</div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+        ${q.options.map((o,j)=>`<div style="padding:4px 8px; border-radius:4px; color:${j===q.correct?'#000':'var(--txt3)'}; background:${j===q.correct?'var(--acc)':'var(--bg3)'}">${o} ${j===q.correct?'✓':''}</div>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('builder-preview').innerHTML = h;
+}
+
+function saveBuilderAsTest(){
+  if(!builderQuestions.length) return alert("Add questions first!");
+  tests.push({
+    name: document.getElementById('b-name').value || 'Untitled Test',
+    category: document.getElementById('b-cat').value || 'General',
+    questions: [...builderQuestions]
+  });
+  saveTests();
+  builderQuestions=[];
+  document.getElementById('b-name').value='';
+  document.getElementById('b-cat').value='';
+  renderBuilderPreview();
+  nav('home');
+}
+
+// readTextFile: superseded by document parser
+
+// generateFromAI: replaced by real implementation below
+
+/* ═══════════════════════════════════════
+   TEST ENGINE
+═══════════════════════════════════════ */
+function startTest(){
+  const idx = document.getElementById('qs-select').value;
+  if(!idx) return;
+  const t = tests[idx];
+  const dur = parseInt(document.getElementById('qs-duration').value)||30;
+  let qs = [...t.questions];
+  const limit = parseInt(document.getElementById('qs-count').value)||qs.length;
+  qs = qs.sort(()=>Math.random()-.5).slice(0, limit); 
+  
+  teState = { test:t, questions:qs, answers:{}, current:0, startTime:Date.now(), duration: dur*60 };
+  document.getElementById('te-test-name').textContent = t.name;
+  document.getElementById('test-engine').classList.add('active');
+  renderTEQuestion();
+  
+  clearInterval(teState.timer);
+  teState.timer = setInterval(()=>{
+    const elapsed = Math.floor((Date.now()-teState.startTime)/1000);
+    const left = teState.duration - elapsed;
+    if(left<=0){ clearInterval(teState.timer); endTest(true); return; }
+    const mm = String(Math.floor(left/60)).padStart(2,'0');
+    const ss = String(left%60).padStart(2,'0');
+    document.getElementById('te-timer').textContent = `${mm}:${ss}`;
+  },1000);
+}
+
+function renderTEQuestion(){
+  const q = teState.questions[teState.current];
+  document.getElementById('te-prog').style.width = ((teState.current+1)/teState.questions.length*100)+'%';
+  
+  let h = `<div style="font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:12px">QUESTION ${teState.current+1} OF ${teState.questions.length}</div>`;
+  
+  if(q.mediaUrl) {
+    h += `<div class="media-container">${renderMediaHTML(q.mediaUrl, q.mediaType)}</div>`;
+  }
+  
+  h += `<div style="font-size:18px;font-weight:500;margin-bottom:24px;line-height:1.5">${q.question}</div>`;
+  
+  q.options.forEach((opt,i)=>{
+    const sel = teState.answers[teState.current] === i ? 'selected' : '';
+    h += `<div class="te-opt ${sel}" onclick="teAnswer(${i})">
+      <div class="te-opt-letter">${'ABCD'[i]}</div>
+      <div class="te-opt-text">${opt}</div>
+    </div>`;
+  });
+  document.getElementById('te-body').innerHTML = h;
+  
+  const nav = document.getElementById('te-qnav');
+  nav.innerHTML = teState.questions.map((_,i)=>{
+    const ans = teState.answers[i] !== undefined;
+    const isCur = i === teState.current;
+    let bg = isCur ? 'var(--acc)' : (ans ? 'var(--bg3)' : 'transparent');
+    let cl = isCur ? (document.body.getAttribute('data-theme')==='dark'?'#000':'#fff') : (ans ? 'var(--txt)' : 'var(--txt3)');
+    let bd = isCur ? 'var(--acc)' : 'var(--bd)';
+    return `<button onclick="jumpQ(${i})" style="width:28px;height:28px;border-radius:4px;border:1px solid ${bd};background:${bg};color:${cl};cursor:pointer;font-family:var(--mono);font-size:11px">${i+1}</button>`;
+  }).join('');
+}
+
+function teAnswer(idx){ teState.answers[teState.current] = idx; renderTEQuestion(); }
+function teNav(dir){ const n = teState.current + dir; if(n>=0 && n<teState.questions.length){ teState.current = n; renderTEQuestion(); } }
+function jumpQ(idx){ teState.current = idx; renderTEQuestion(); }
+
+function endTest(auto=false){
+  if(!auto && !confirm("End test and save results?")) return;
+  clearInterval(teState.timer);
+  document.getElementById('test-engine').classList.remove('active');
+  
+  let correct = 0, wrong = 0, skipped = 0;
+  const qData = teState.questions.map((q,i) => {
+    const ans = teState.answers[i];
+    if(ans === q.correct) correct++;
+    else if(ans === undefined) skipped++;
+    else wrong++;
+    return { q: q.question, opts: q.options, correctIdx: q.correct, userIdx: ans };
+  });
+  
+  results.unshift({
+    id: Date.now(),
+    testName: teState.test.name,
+    score: Math.round((correct/teState.questions.length)*100),
+    correct, wrong, skipped,
+    total: teState.questions.length,
+    date: new Date().toISOString(),
+    details: qData
+  });
+  saveResults();
+  nav('results');
+}
+
+/* ═══════════════════════════════════════
+   RESULTS & ANALYTICS CHARTS
+═══════════════════════════════════════ */
+function getTestCategory(testName) {
+  const t = tests.find(x => x.name === testName);
+  return t && t.category ? t.category : 'General';
+}
+
+function renderResultsList(){
+  const el = document.getElementById('results-list');
+  if(!results.length) {
+    el.innerHTML = '<div style="padding:24px;color:var(--txt3);text-align:center">No attempts recorded yet.</div>';
+    return;
+  }
+  el.innerHTML = results.map((r,i) => `
+    <div class="result-row ${activeResult===r.id?'active':''}" onclick="selectResult(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-weight:600;font-size:14px">${escapeHTML(r.testName||"Untitled")}</div>
+        <div style="font-size:18px;font-weight:700;color:${r.score>=70?'var(--acc)':r.score>=50?'var(--yel)':'var(--red)'}">${r.score}%</div>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);display:flex;justify-content:space-between">
+        <span>${new Date(r.date).toLocaleString()}</span>
+        <span>${r.correct}✓ ${r.wrong}✗ ${r.skipped}-</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectResult(idx) {
+  activeResult = results[idx].id;
+  currentAIChatHistory = []; 
+  renderResultsList(); 
+  const box = document.getElementById('ai-chat-box');
+  box.innerHTML = `
+    <div class="ai-msg">
+      <div class="ai-avatar">🤖</div>
+      <div class="ai-bubble">You selected <strong>${escapeHTML(results[idx].testName||"Untitled")}</strong> (Score: ${results[idx].score}%).<br><br>Adjust the settings above and click "Analyse Result" to generate a breakdown.</div>
+    </div>`;
+}
+
+function renderAnalyticsCharts() {
+  const overviewEl = document.getElementById('analytics-overview');
+  if (!results.length) {
+    overviewEl.style.display = 'none';
+    return;
+  }
+  overviewEl.style.display = 'block';
+
+  const catFilterEl = document.getElementById('ana-cat-filter');
+  const currentFilter = catFilterEl.value;
+  const uniqueCats = [...new Set(results.map(r => getTestCategory(r.testName)))].sort();
+  
+  if (catFilterEl.innerHTML.indexOf('option') === -1 || catFilterEl.children.length - 1 !== uniqueCats.length) {
+    catFilterEl.innerHTML = '<option value="">All Categories</option>' + 
+      uniqueCats.map(c => `<option value="${c}" ${c===currentFilter?'selected':''}>${c}</option>`).join('');
+  }
+
+  const filteredResults = currentFilter ? results.filter(r => getTestCategory(r.testName) === currentFilter) : results;
+
+  const totalAttempts = filteredResults.length;
+  const avgScore = totalAttempts ? Math.round(filteredResults.reduce((sum, r) => sum + r.score, 0) / totalAttempts) : 0;
+  
+  let totalQs = 0, totalCorrect = 0, totalWrong = 0, totalSkipped = 0;
+  filteredResults.forEach(r => {
+    totalQs += (r.correct + r.wrong + r.skipped);
+    totalCorrect += r.correct;
+    totalWrong += r.wrong;
+    totalSkipped += r.skipped;
+  });
+
+  const totalAnswered = totalCorrect + totalWrong;
+  const accuracy = totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+  document.getElementById('stat-total-tests').textContent = totalAttempts;
+  document.getElementById('stat-avg-score').textContent = avgScore + '%';
+  document.getElementById('stat-accuracy').textContent = accuracy + '%';
+  
+  document.getElementById('stat-q-total').textContent = totalQs;
+  document.getElementById('stat-q-correct').textContent = totalCorrect;
+  document.getElementById('stat-q-wrong').textContent = totalWrong;
+  document.getElementById('stat-q-skip').textContent = totalSkipped;
+
+  if (totalAttempts === 0) {
+    if(analyticsCharts['trend']) analyticsCharts['trend'].destroy();
+    if(analyticsCharts['tests']) analyticsCharts['tests'].destroy();
+    return;
+  }
+
+  const chronological = [...filteredResults].reverse();
+  const trendLabels = chronological.map(r => new Date(r.date).toLocaleDateString([], {month:'short', day:'numeric'}));
+  const trendData = chronological.map(r => r.score);
+
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? '#222' : '#e2e8f0';
+
+  if(analyticsCharts['trend']) analyticsCharts['trend'].destroy();
+  analyticsCharts['trend'] = new Chart(document.getElementById('chart-trend'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'Score %',
+        data: trendData,
+        borderColor: '#10b981', 
+        backgroundColor: '#10b98122',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: 'Score Trend Over Time', color: '#a3a3a3', font: {family: 'IBM Plex Mono'} } },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: '#888' } },
+        x: { grid: { display: false }, ticks: { color: '#888' } }
+      }
+    }
+  });
+
+  if(analyticsCharts['tests']) analyticsCharts['tests'].destroy();
+  
+  const mapData = {};
+  filteredResults.forEach(r => {
+    const key = currentFilter ? r.testName : getTestCategory(r.testName);
+    if(!mapData[key]) mapData[key] = { sum: 0, count: 0 };
+    mapData[key].sum += r.score;
+    mapData[key].count += 1;
+  });
+  
+  const labels = Object.keys(mapData);
+  const averages = labels.map(name => mapData[name].sum / mapData[name].count);
+  const shortLabels = labels.map(n => n.length > 15 ? n.substring(0, 15) + '...' : n);
+  const chartTitle = currentFilter ? 'Average Score by Test Paper' : 'Average Score by Category';
+
+  analyticsCharts['tests'] = new Chart(document.getElementById('chart-tests'), {
+    type: 'bar',
+    data: {
+      labels: shortLabels,
+      datasets: [{
+        label: 'Avg Score %',
+        data: averages,
+        backgroundColor: currentFilter ? '#3b82f6' : '#a855f7', 
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false }, 
+        title: { display: true, text: chartTitle, color: '#a3a3a3', font: {family: 'IBM Plex Mono'} },
+        tooltip: { callbacks: { title: (ctx) => labels[ctx[0].dataIndex] } } 
+      },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: '#888' } },
+        x: { grid: { display: false }, ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   REAL AI INTEGRATION ENGINE
+═══════════════════════════════════════ */
+async function executeAIRequest(sysPrompt, userPrompt, chatHistory = []) {
+  const model = document.getElementById('res-ai-model').value;
+  let resultText = "";
+
+  try {
+    if (model === 'custom' || model === 'openai') {
+      let url = model === 'custom' ? keys.customUrl : 'https://api.openai.com/v1/chat/completions';
+      if(!url) throw new Error("URL missing in Integrations tab.");
+      
+      let key = model === 'custom' ? 'dummy-key' : keys.openai;
+      if(model === 'openai' && !key) throw new Error("OpenAI API Key missing.");
+
+      if (model === 'custom' && url.includes('localhost') && !url.includes('chat/completions')) {
+          url = url.replace(/\/$/, '') + '/v1/chat/completions';
+      }
+
+      const msgs = [{role:"system", content: sysPrompt}, ...chatHistory, {role:"user", content:userPrompt}];
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({ 
+          model: model === 'custom' ? "openai" : "gpt-4o-mini", 
+          messages: msgs 
+        })
+      });
+
+      if (!res.ok) {
+         throw new Error(`Server returned HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        if(data.error) throw new Error(data.error.message || "Unknown API Error");
+        
+        if (data.choices && data.choices[0].message) {
+          resultText = data.choices[0].message.content; 
+        } else if (data.response) {
+          resultText = data.response; 
+        } else {
+          resultText = JSON.stringify(data);
+        }
+      } else {
+        resultText = await res.text(); 
+      }
+
+    } else if (model === 'ollama') {
+      const url = (keys.ollamaUrl || 'http://localhost:11434').replace(/\/$/, '') + '/api/chat';
+      const msgs = [{role:"system", content: sysPrompt}, ...chatHistory, {role:"user", content:userPrompt}];
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ model: keys.ollamaModel || 'llama3', messages: msgs, stream: false })
+      });
+      if (!res.ok) throw new Error(`Ollama Server Error ${res.status}`);
+      const data = await res.json();
+      resultText = data.message.content;
+
+    } else if (model === 'gemini') {
+      if(!keys.gemini) throw new Error("Gemini API Key missing.");
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keys.gemini}`;
+      
+      let contents = [];
+      chatHistory.forEach(m => contents.push({role: m.role==='assistant'?'model':'user', parts:[{text:m.content}]}));
+      contents.push({role: "user", parts: [{text: userPrompt}]});
+
+      const res = await fetch(url, {
+         method: 'POST',
+         headers: {'Content-Type': 'application/json'},
+         body: JSON.stringify({
+            system_instruction: { parts: [{text: sysPrompt}] },
+            contents: contents
+         })
+      });
+      if (!res.ok) throw new Error(`Gemini Error ${res.status}`);
+      const data = await res.json();
+      if(data.error) throw new Error(data.error.message);
+      resultText = data.candidates[0].content.parts[0].text;
+
+    } else if (model === 'anthropic') {
+       if(!keys.anthropic) throw new Error("Anthropic API Key missing.");
+       const res = await fetch('https://api.anthropic.com/v1/messages', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'x-api-key': keys.anthropic,
+           'anthropic-version': '2023-06-01',
+           'anthropic-dangerously-allow-browser': 'true' 
+         },
+         body: JSON.stringify({
+           model: 'claude-3-5-sonnet-20240620',
+           max_tokens: 1024,
+           system: sysPrompt,
+           messages: [...chatHistory, {role: "user", content: userPrompt}]
+         })
+       });
+       if (!res.ok) throw new Error(`Anthropic Error ${res.status}`);
+       const data = await res.json();
+       if(data.error) throw new Error(data.error.message);
+       resultText = data.content[0].text;
+    }
+
+    return resultText;
+  } catch(err) {
+     throw err;
+  }
+}
+
+async function runAnalysis() {
+  if(!activeResult) return alert("Select a result from the left panel first.");
+  const res = results.find(r => r.id === activeResult);
+  
+  const focus = document.getElementById('res-ai-focus').value;
+  const length = document.getElementById('res-ai-length').value;
+  const tone = document.getElementById('res-ai-tone').value;
+  
+  const box = document.getElementById('ai-chat-box');
+  box.innerHTML += `
+    <div class="ai-msg user">
+      <div class="ai-avatar" style="background:var(--acc);color:#000">U</div>
+      <div class="ai-bubble">Analyse my performance. (Focus: ${escapeHTML(focus)}, Length: ${escapeHTML(length)}, Tone: ${escapeHTML(tone)})</div>
+    </div>
+    <div class="ai-msg" id="loading-msg">
+      <div class="ai-avatar">🤖</div>
+      <div class="ai-bubble" style="color:var(--txt3)"><div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div>
+    </div>`;
+    
+  scrollToBottom();
+  
+  const focusPrompts = {
+     full: "Give a summary of overall performance.",
+     weak: "Focus ONLY on the incorrect answers.",
+     time: "Focus ONLY on time management.",
+     accuracy: "Focus ONLY on accuracy and guessing patterns.",
+     strategy: "Give test-taking strategy advice."
+  };
+
+  const lengthPrompts = {
+     short: "Keep your analysis EXTREMELY SIMPLE and brief. Maximum 3-4 sentences total. Do not write long essays.",
+     detailed: "Provide a detailed, descriptive, and thorough explanation."
+  };
+
+  const tonePrompts = {
+     friendly: "Adopt a friendly, casual, and supportive tutor tone.",
+     critique: "Adopt a strict, direct, and highly critical tone. Point out flaws clearly without sugarcoating.",
+     encouraging: "Adopt an extremely encouraging, enthusiastic, and uplifting tone. Motivate the student to keep trying!"
+  };
+
+  let sysPrompt = `You are an expert exam prep coach.
+Tone: ${tonePrompts[tone]}
+Length: ${lengthPrompts[length]}
+
+Context of user's attempt:
+Test Name: ${res.testName}
+Score: ${res.score}% (${res.correct}/${res.total})
+Unanswered: ${res.skipped}
+
+Focus your critique strictly on: ${focusPrompts[focus]}`;
+
+  if (length === 'short') {
+      sysPrompt += `\n\nSTRICT FORMAT:
+1. One brief sentence matching your assigned tone.
+2. Review the WRONG or SKIPPED answers only. Explain simply in ONE short sentence why they got it wrong.
+3. Give ONE clear, actionable step to improve.`;
+  }
+
+  const wrongAnswers = res.details.filter(d => d.userIdx !== d.correctIdx);
+  const userPrompt = `Here is the data of my incorrect or skipped answers:\n${JSON.stringify(wrongAnswers, null, 2)}\n\nPlease provide my analysis.`;
+
+  currentAIChatHistory = []; 
+
+  try {
+    const aiResponse = await executeAIRequest(sysPrompt, userPrompt, currentAIChatHistory);
+    
+    document.getElementById('loading-msg').remove();
+    box.innerHTML += `
+      <div class="ai-msg">
+        <div class="ai-avatar">🤖</div>
+        <div class="ai-bubble">${formatAIResponse(aiResponse)}</div>
+      </div>`;
+      
+    currentAIChatHistory.push({role: "user", content: userPrompt});
+    currentAIChatHistory.push({role: "assistant", content: aiResponse});
+    
+  } catch(error) {
+    document.getElementById('loading-msg').remove();
+    box.innerHTML += `
+      <div class="ai-msg">
+        <div class="ai-avatar" style="background:var(--red2);color:var(--red);border-color:var(--red)">!</div>
+        <div class="ai-bubble" style="color:var(--red)"><strong>Connection Error:</strong><br>${error.message}</div>
+      </div>`;
+  }
+  scrollToBottom();
+}
+
+async function sendAIChat() {
+  const inp = document.getElementById('ai-chat-input');
+  const txt = inp.value.trim();
+  if(!txt || !activeResult) return;
+  
+  const box = document.getElementById('ai-chat-box');
+  box.innerHTML += `
+    <div class="ai-msg user">
+      <div class="ai-avatar" style="background:var(--acc);color:#000">U</div>
+      <div class="ai-bubble">${txt}</div>
+    </div>
+    <div class="ai-msg" id="loading-msg-chat">
+      <div class="ai-avatar">🤖</div>
+      <div class="ai-bubble" style="color:var(--txt3)"><div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div>
+    </div>`;
+  inp.value = '';
+  scrollToBottom();
+  
+  const sysPrompt = `You are an expert exam prep coach. Keep your answers extremely brief, direct, and simple. Do not ramble.`;
+
+  try {
+    const aiResponse = await executeAIRequest(sysPrompt, txt, currentAIChatHistory);
+    
+    document.getElementById('loading-msg-chat').remove();
+    box.innerHTML += `
+      <div class="ai-msg">
+        <div class="ai-avatar">🤖</div>
+        <div class="ai-bubble">${formatAIResponse(aiResponse)}</div>
+      </div>`;
+      
+    currentAIChatHistory.push({role: "user", content: txt});
+    currentAIChatHistory.push({role: "assistant", content: aiResponse});
+    
+  } catch(error) {
+    document.getElementById('loading-msg-chat').remove();
+    box.innerHTML += `
+      <div class="ai-msg">
+        <div class="ai-avatar" style="background:var(--red2);color:var(--red);border-color:var(--red)">!</div>
+        <div class="ai-bubble" style="color:var(--red)"><strong>Connection Error:</strong><br>${error.message}</div>
+      </div>`;
+  }
+  scrollToBottom();
+}
+
+/* ═══════════════════════════════════════
+   INTEGRATIONS
+═══════════════════════════════════════ */
+function loadKeys() {
+  document.getElementById('api-custom-url').value = keys.customUrl || '';
+  document.getElementById('api-gemini-key').value = keys.gemini || '';
+  document.getElementById('api-ollama-url').value = keys.ollamaUrl || 'http://localhost:11434';
+  document.getElementById('api-ollama-model').value = keys.ollamaModel || 'llama3';
+  document.getElementById('api-openai-key').value = keys.openai || '';
+  document.getElementById('api-anthropic-key').value = keys.anthropic || '';
+}
+
+function saveKeys() {
+  keys = {
+    customUrl: document.getElementById('api-custom-url').value,
+    gemini: document.getElementById('api-gemini-key').value,
+    ollamaUrl: document.getElementById('api-ollama-url').value,
+    ollamaModel: document.getElementById('api-ollama-model').value,
+    openai: document.getElementById('api-openai-key').value,
+    anthropic: document.getElementById('api-anthropic-key').value,
+  };
+  localStorage.setItem('ep_keys_v2', JSON.stringify(keys));
+  alert('Configuration saved locally.');
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+function init(){
+  const savedTheme = localStorage.getItem('ep_theme') || 'dark';
+  if(savedTheme === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-toggle').innerHTML = '☀ Light Mode';
+  } else {
+    document.body.removeAttribute('data-theme');
+    document.getElementById('theme-toggle').innerHTML = '☾ Dark Mode';
+  }
+
+  initBuilderOpts();
+  loadKeys();
+  renderTestList();
+  renderResultsList();
+  renderAnalyticsCharts();
+}
+init();
+
+
+/* ═══════════════════════════════════════
+   STREAK ENGINE (v7)
+═══════════════════════════════════════ */
+function buildActivityMap(results){
+  const map={};
+  results.forEach(r=>{
+    const raw=r.date||r.timestamp||r.completedAt||Date.now();
+    const k=new Date(raw).toISOString().slice(0,10);
+    map[k]=(map[k]||0)+1;
+  });
+  return map;
+}
+function calcCurrentStreak(dateSet){
+  let streak=0;
+  const d=new Date();
+  // check today first, then walk back
+  for(let i=0;i<365;i++){
+    const key=d.toISOString().slice(0,10);
+    if(dateSet.has(key)){streak++;d.setDate(d.getDate()-1);}
+    else if(streak===0&&i===0){d.setDate(d.getDate()-1);} // grace: skip today if not yet tested
+    else break;
+  }
+  return streak;
+}
+function calcLongestStreak(dateSet){
+  if(!dateSet.size) return 0;
+  const sorted=[...dateSet].sort();
+  let longest=1,current=1;
+  for(let i=1;i<sorted.length;i++){
+    const diff=(new Date(sorted[i])-new Date(sorted[i-1]))/86400000;
+    if(diff===1){current++;longest=Math.max(longest,current);}
+    else current=1;
+  }
+  return longest;
+}
+function renderStreakCalendar(activityMap){
+  const grid=document.getElementById('streak-calendar-grid');
+  const monthLabel=document.getElementById('streak-month-label');
+  if(!grid) return;
+  const today=new Date();
+  const todayKey=today.toISOString().slice(0,10);
+  const y=today.getFullYear(),m=today.getMonth();
+  const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(monthLabel) monthLabel.textContent=mNames[m]+' '+y;
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let out='';
+  dayNames.forEach(d=>{ out+=`<div class="calendar-day cal-header">${d}</div>`; });
+  const firstDay=new Date(y,m,1).getDay();
+  for(let i=0;i<firstDay;i++) out+='<div class="calendar-day cal-empty"></div>';
+  const days=new Date(y,m+1,0).getDate();
+  for(let day=1;day<=days;day++){
+    const dk=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const cnt=activityMap[dk]||0;
+    const future=dk>todayKey;
+    let cls='calendar-day';
+    if(future) cls+=' cal-empty';
+    else if(cnt>=4) cls+=' cal-l4';
+    else if(cnt===3) cls+=' cal-l3';
+    else if(cnt===2) cls+=' cal-l2';
+    else if(cnt===1) cls+=' cal-l1';
+    if(dk===todayKey) cls+=' cal-today';
+    const title=future?'':dk+': '+cnt+' attempt'+(cnt!==1?'s':'');
+    out+=`<div class="${cls}" title="${title}">${day}</div>`;
+  }
+  grid.innerHTML=out;
+}
+function renderMiniHeatmap(activityMap){
+  const grid=document.getElementById('mini-heatmap');
+  if(!grid) return;
+  let out='';
+  for(let i=27;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    const cnt=activityMap[k]||0;
+    let cls='streak-cell';
+    if(cnt>=4) cls+=' active-4';
+    else if(cnt===3) cls+=' active-3';
+    else if(cnt===2) cls+=' active-2';
+    else if(cnt===1) cls+=' active-1';
+    out+=`<div class="${cls}" title="${k}: ${cnt} attempt${cnt!==1?'s':''}"></div>`;
+  }
+  grid.innerHTML=out;
+  const msg=document.getElementById('mini-heatmap-msg');
+  const total=Object.values(activityMap).reduce((a,b)=>a+b,0);
+  if(msg) msg.textContent=total?total+' attempts over last 28 days':'Take tests to see your activity here.';
+}
+function renderLiveAnalytics(){
+  const streakEl=document.getElementById('metric-streak');
+  const improveEl=document.getElementById('metric-improvement');
+  const bestCatEl=document.getElementById('metric-best-category');
+  const weakEl=document.getElementById('metric-weak-topic');
+  if(!results.length){
+    if(streakEl) streakEl.textContent='0';
+    if(improveEl) improveEl.textContent='—';
+    if(bestCatEl) bestCatEl.textContent='—';
+    if(weakEl) weakEl.textContent='—';
+    ['streak-current','streak-longest','streak-active-days'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='0';});
+    const tip=document.getElementById('streak-tip-text');if(tip)tip.textContent='⭐ Take a test to start your streak.';
+    const msg=document.getElementById('streak-message');if(msg)msg.textContent='Complete tests daily to build your streak.';
+    renderMiniHeatmap({});renderStreakCalendar({});return;
+  }
+  const actMap=buildActivityMap(results);
+  const dateSet=new Set(Object.keys(actMap));
+  const cur=calcCurrentStreak(dateSet);
+  const lng=calcLongestStreak(dateSet);
+  const nowYM=new Date().toISOString().slice(0,7);
+  const activeDays=[...dateSet].filter(d=>d.startsWith(nowYM)).length;
+  if(streakEl) streakEl.textContent=cur;
+  const curEl=document.getElementById('streak-current');if(curEl)curEl.textContent=cur;
+  const lngEl=document.getElementById('streak-longest');if(lngEl)lngEl.textContent=lng;
+  const actEl=document.getElementById('streak-active-days');if(actEl)actEl.textContent=activeDays;
+  const tip=document.getElementById('streak-tip-text');
+  if(tip){
+    if(cur>=7) tip.textContent='🔥 '+cur+'-day streak! Incredible consistency.';
+    else if(cur>=3) tip.textContent='⚡ '+cur+'-day streak — keep it going!';
+    else if(cur>=1) tip.textContent='✅ '+cur+'-day streak started. Show up tomorrow too.';
+    else tip.textContent='⭐ Take a test today to start your streak.';
+  }
+  const msg=document.getElementById('streak-message');
+  if(msg) msg.textContent=cur>0?'You\'re on a '+cur+'-day streak! Best: '+lng+' days.':'No active streak — take a test today.';
+  renderMiniHeatmap(actMap);renderStreakCalendar(actMap);
+  if(results.length>=2&&improveEl){
+    const diff=results[0].score-results[1].score;
+    improveEl.textContent=(diff>0?'+':'')+diff+'%';
+    improveEl.style.color=diff>=0?'var(--acc)':'var(--red)';
+  }
+  const catMap={};
+  results.forEach(r=>{
+    const cat=getTestCategory(r.testName);
+    if(!catMap[cat]) catMap[cat]={total:0,count:0};
+    catMap[cat].total+=r.score;catMap[cat].count++;
+  });
+  if(bestCatEl){let best='—',bestAvg=-1;Object.entries(catMap).forEach(([c,v])=>{const avg=v.total/v.count;if(avg>bestAvg){bestAvg=avg;best=c;}});bestCatEl.textContent=best;}
+  const weakMap={};
+  results.forEach(r=>{if(r.score<60){const cat=getTestCategory(r.testName);weakMap[cat]=(weakMap[cat]||0)+1;}});
+  if(weakEl){let weak='—',wc=-1;Object.entries(weakMap).forEach(([c,v])=>{if(v>wc){wc=v;weak=c;}});weakEl.textContent=weak;}
+  renderCategoryTable(catMap);renderWeaknessTable(weakMap);
+}
+
+/* ═══════════════════════════════════════
+   EXPORT FUNCTIONS (fixed location)
+═══════════════════════════════════════ */
+function exportAttemptLogs(){
+  if(!results.length){alert('No attempts to export.');return;}
+  const rows=[['Date','Test','Score','Correct','Wrong','Skipped']];
+  results.forEach(r=>rows.push([new Date(r.date||r.timestamp||Date.now()).toLocaleString(),escapeHTML(r.testName||'Test'),r.score||0,r.correct||0,r.wrong||0,r.skipped||0]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='attempt_logs_'+new Date().toISOString().replace(/[:.]/g,'')+'.csv';
+  a.click();
+}
+function exportAttemptJSON(){
+  if(!results.length){alert('No attempts found.');return;}
+  const target=activeResult?results.find(r=>r.id===activeResult)||results[0]:results[0];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(target,null,2)],{type:'application/json'}));
+  a.download='attempt_'+new Date().toISOString().replace(/[:.]/g,'')+'.json';
+  a.click();
+}
+
+/* ═══════════════════════════════════════
+   AI QUESTION GENERATOR (real)
+═══════════════════════════════════════ */
+async function generateFromAI(){
+  const topic=document.getElementById('ai-gen-topic').value.trim();
+  const count=parseInt(document.getElementById('ai-gen-count').value)||5;
+  const diff=document.getElementById('ai-gen-diff').value;
+  const style=document.getElementById('ai-gen-style').value;
+  const context=document.getElementById('ai-gen-context').value.trim();
+  const statusEl=document.getElementById('ai-gen-status');
+  const btn=document.getElementById('ai-gen-btn');
+  if(!topic){alert('Enter a topic or subject first.');return;}
+  btn.disabled=true;btn.textContent='⏳ Generating…';
+  if(statusEl){statusEl.style.display='';statusEl.textContent='Sending to AI…';statusEl.style.color='var(--txt3)';}
+  const sys=`You are an expert MCQ question writer. Generate exactly ${count} multiple-choice questions.\nDifficulty: ${diff}. Style: ${style}.\nReturn ONLY a valid JSON array — no markdown, no explanation:\n[{"question":"...","options":["A text","B text","C text","D text"],"correct":0,"explanation":"one sentence"}]\ncorrect = 0-indexed (0=A,1=B,2=C,3=D). All 4 options must be plausible. explanation is mandatory.`;
+  const userMsg=`Topic: ${topic}${context?'\nContext: '+context:''}\nGenerate ${count} MCQ questions.`;
+  try{
+    const raw=await executeAIRequest(sys,userMsg,[]);
+    const cleaned=raw.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'').trim();
+    const parsed=JSON.parse(cleaned);
+    if(!Array.isArray(parsed)) throw new Error('Expected JSON array');
+    let added=0;
+    parsed.forEach(q=>{
+      if(!q.question||!Array.isArray(q.options)||q.options.length<2) return;
+      const opts=q.options.slice(0,4).map(o=>String(o).trim());
+      while(opts.length<4) opts.push('—');
+      builderQuestions.push({question:String(q.question).trim(),options:opts,correct:typeof q.correct==='number'?Math.min(3,Math.max(0,q.correct)):0,media:'',mediaType:'auto',explanation:String(q.explanation||'').trim()});
+      added++;
+    });
+    renderBuilderPreview();
+    if(statusEl){statusEl.textContent='✓ Added '+added+' question'+(added!==1?'s':'')+' to builder';statusEl.style.color='var(--acc)';}
+  }catch(e){
+    if(statusEl){statusEl.textContent='Error: '+(e.message||e)+'. Check API key in Integrations tab.';statusEl.style.color='var(--red)';}
+  }finally{
+    btn.disabled=false;btn.textContent='✨ Generate Questions';
+  }
+}
+
+/* ═══════════════════════════════════════
+   DOCUMENT PARSER — Text / File / AI
+═══════════════════════════════════════ */
+let parsedQuestions=[];
+let parseFileContent='';
+function switchParseTab(tab){
+  ['paste','file','ai'].forEach(t=>{
+    const pane=document.getElementById('ptab-content-'+t);
+    const btn=document.getElementById('ptab-'+t);
+    if(pane) pane.style.display=t===tab?'':'none';
+    if(btn) btn.classList.toggle('parse-tab-active',t===tab);
+  });
+}
+function handleParseFileDrop(e){
+  e.preventDefault();
+  document.getElementById('parse-dropzone').style.borderColor='var(--bd2)';
+  const file=e.dataTransfer.files[0];if(file)loadParseFile(file);
+}
+function handleParseFileSelect(input){const file=input.files[0];if(file)loadParseFile(file);}
+function loadParseFile(file){
+  const nameEl=document.getElementById('parse-file-name');
+  if(nameEl) nameEl.textContent='📄 '+file.name+' ('+( file.size/1024).toFixed(1)+' KB)';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    parseFileContent=e.target.result;
+    const aiTxt=document.getElementById('parse-ai-text');
+    if(aiTxt) aiTxt.value=parseFileContent;
+    plog('Loaded: '+file.name+' — '+parseFileContent.split('\n').length+' lines','ok');
+  };
+  reader.onerror=()=>plog('Could not read file.','err');
+  reader.readAsText(file);
+}
+function plog(msg,type=''){
+  const el=document.getElementById('parse-log');if(!el)return;
+  el.style.display='';
+  const span=document.createElement('span');
+  span.className='parse-log-line'+(type?' parse-log-'+type:'');
+  span.textContent=msg;el.appendChild(span);el.scrollTop=el.scrollHeight;
+}
+function pclear(){const el=document.getElementById('parse-log');if(el){el.innerHTML='';el.style.display='none';}}
+function parseTextToQuestions(){
+  const isPaste=document.getElementById('ptab-content-paste').style.display!=='none';
+  const raw=isPaste?document.getElementById('parse-raw-text').value.trim():parseFileContent.trim();
+  if(!raw){alert('Paste text or load a file first.');return;}
+  pclear();parsedQuestions=[];
+  plog('Parsing '+raw.split('\n').length+' lines…','');
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const found=[];
+  const qPat=/^(?:Q\s*\d+[.):]?\s*|\d+[.):]?\s+)(.+)/i;
+  const optPat=/^(?:\(?([A-Da-d1-4])\)?[.):]?\s*)(.+)/;
+  const ansPat=/^(?:ans(?:wer)?|correct|key|solution)[\s:]+([A-Da-d1-4])/i;
+  let cur=null;
+  const flush=()=>{
+    if(!cur) return;
+    if(cur.question&&cur.options.length>=2){
+      while(cur.options.length<4) cur.options.push('—');
+      found.push(cur);
+    }
+    cur=null;
+  };
+  lines.forEach(line=>{
+    const qm=line.match(qPat);
+    if(qm){flush();cur={question:qm[1].trim(),options:[],correctIdx:0,explanation:''};return;}
+    if(cur){
+      const om=line.match(optPat);
+      if(om&&cur.options.length<4){cur.options.push(om[2].trim());return;}
+      const am=line.match(ansPat);
+      if(am){const l=am[1].toUpperCase();const nm={'1':'A','2':'B','3':'C','4':'D'};cur.correctIdx=Math.max(0,'ABCD'.indexOf(nm[l]||l));return;}
+      if(cur.options.length===0) cur.question+=' '+line;
+    } else if(line.length>15&&line.endsWith('?')){
+      flush();cur={question:line,options:[],correctIdx:0,explanation:''};
+    }
+  });
+  flush();
+  // inline fallback
+  if(!found.length){
+    const inPat=/(.+?)\s+\(?[Aa1]\)?[.):]\s*(.+?)\s+\(?[Bb2]\)?[.):]\s*(.+?)\s+\(?[Cc3]\)?[.):]\s*(.+?)\s+\(?[Dd4]\)?[.):]\s*(.+?)(?:\s+(?:ans|answer|correct)[\s:]+([A-Da-d1-4]))?$/i;
+    raw.split('\n').forEach(line=>{
+      const m=line.trim().match(inPat);
+      if(m){const l=(m[6]||'A').toUpperCase();const nm={'1':'A','2':'B','3':'C','4':'D'};const ci=Math.max(0,'ABCD'.indexOf(nm[l]||l));found.push({question:m[1].trim(),options:[m[2].trim(),m[3].trim(),m[4].trim(),m[5].trim()],correctIdx:ci,explanation:''});}
+    });
+  }
+  parsedQuestions=found;
+  if(!found.length){
+    plog('No questions detected. Tips:','warn');
+    plog('• Start each question with "Q1." or "1." followed by a space','');
+    plog('• Options should start with A) B) C) D) or (A)(B)…','');
+    plog('• Include "Answer: B" or "Ans: b" after options','');
+    plog('• For messy formats, try the AI Extract tab','');
+    return;
+  }
+  plog('✓ Found '+found.length+' question'+(found.length!==1?'s':''),'ok');
+  const cntEl=document.getElementById('parsed-q-count');
+  if(cntEl){cntEl.textContent=found.length+' found';cntEl.style.display='';}
+  renderParsedPreview();
+}
+function renderParsedPreview(){
+  const wrap=document.getElementById('parsed-preview-wrap');
+  const container=document.getElementById('parsed-preview');
+  if(!wrap||!container) return;
+  wrap.style.display='';
+  container.innerHTML=parsedQuestions.map((q,i)=>{
+    const opts=q.options.map((o,j)=>`<div class="parsed-q-opt${j===q.correctIdx?' correct':''}">${'ABCD'[j]}. ${escapeHTML(o)}</div>`).join('');
+    return `<div class="parsed-q-card"><div class="parsed-q-text"><span style="font-size:10px;color:var(--txt3);font-family:var(--mono)">Q${i+1} </span>${escapeHTML(q.question)}</div><div class="parsed-q-opts">${opts}</div><div class="parsed-q-actions"><button class="btn btn-p bsm" onclick="addSingleParsedQ(${i})" style="flex:1">+ Add</button><button class="btn btn-o bsm" onclick="removeParsedQ(${i})">✕</button></div></div>`;
+  }).join('');
+}
+function addSingleParsedQ(i){
+  const q=parsedQuestions[i];if(!q)return;
+  builderQuestions.push({question:q.question,options:q.options,correct:q.correctIdx,media:'',mediaType:'auto',explanation:q.explanation||''});
+  renderBuilderPreview();parsedQuestions.splice(i,1);renderParsedPreview();
+  if(!parsedQuestions.length) clearParsedPreview();
+  plog('✓ Added to builder ('+builderQuestions.length+' total)','ok');
+}
+function addAllParsedQuestions(){
+  if(!parsedQuestions.length) return;
+  parsedQuestions.forEach(q=>{builderQuestions.push({question:q.question,options:q.options,correct:q.correctIdx,media:'',mediaType:'auto',explanation:q.explanation||''});});
+  plog('✓ Added all '+parsedQuestions.length+' questions to builder','ok');
+  renderBuilderPreview();clearParsedPreview();
+}
+function removeParsedQ(i){
+  parsedQuestions.splice(i,1);
+  const cntEl=document.getElementById('parsed-q-count');if(cntEl)cntEl.textContent=parsedQuestions.length+' found';
+  renderParsedPreview();if(!parsedQuestions.length)clearParsedPreview();
+}
+function clearParsedPreview(){
+  parsedQuestions=[];
+  const wrap=document.getElementById('parsed-preview-wrap');if(wrap)wrap.style.display='none';
+  const cntEl=document.getElementById('parsed-q-count');if(cntEl)cntEl.style.display='none';
+  pclear();
+}
+async function aiExtractQuestions(){
+  const rawText=(document.getElementById('parse-ai-text').value||parseFileContent).trim();
+  if(!rawText){alert('Paste or load text first, then switch to AI Extract tab.');return;}
+  const hint=document.getElementById('parse-ai-hint').value.trim();
+  const btn=document.querySelector('[onclick="aiExtractQuestions()"]');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Extracting…';}
+  pclear();plog('Sending to AI…','');
+  const sys=`You are an expert MCQ extractor. Extract all multiple-choice questions from the text.\nReturn ONLY a valid JSON array. No markdown, no code fences:\n[{"question":"...","options":["A text","B text","C text","D text"],"correct":0,"explanation":""}]\ncorrect=0-indexed(0=A,1=B,2=C,3=D). explanation can be empty.\n${hint?'Hint: '+hint:''}\nIf no questions found return [].`;
+  try{
+    const raw=await executeAIRequest(sys,'Extract all MCQ questions:\n\n'+rawText,[]);
+    const cleaned=raw.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'').trim();
+    const parsed=JSON.parse(cleaned);
+    if(!Array.isArray(parsed)) throw new Error('Expected JSON array');
+    parsedQuestions=parsed.filter(q=>q.question&&Array.isArray(q.options)&&q.options.length>=2).map(q=>{
+      const opts=q.options.slice(0,4).map(o=>String(o).trim());
+      while(opts.length<4) opts.push('—');
+      return{question:String(q.question).trim(),options:opts,correctIdx:typeof q.correct==='number'?Math.min(3,Math.max(0,q.correct)):0,explanation:String(q.explanation||'').trim()};
+    });
+    if(!parsedQuestions.length){plog('AI found no questions. Try adding a hint.','warn');}
+    else{plog('✓ AI extracted '+parsedQuestions.length+' question'+(parsedQuestions.length!==1?'s':''),'ok');const cntEl=document.getElementById('parsed-q-count');if(cntEl){cntEl.textContent=parsedQuestions.length+' found';cntEl.style.display='';}renderParsedPreview();}
+  }catch(e){plog('Error: '+(e.message||e),'err');plog('Check your API key in Integrations tab.','warn');}
+  finally{if(btn){btn.disabled=false;btn.textContent='🤖 Extract with AI';}}
+}
+
+</script>
+</body>
+</html>

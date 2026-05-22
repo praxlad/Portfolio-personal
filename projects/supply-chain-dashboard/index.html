@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPI Procurement Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#060608;--bg2:#0d0d10;--bg3:#141418;--bg4:#1c1c22;--bg5:#242430;
+  --green:#00ff87;--g2:#00c853;--g3:#0d3320;--g4:#00ff8715;
+  --red:#ff3b5c;--r2:#2a0a10;
+  --yel:#ffd60a;--blu:#3d8ef8;--pur:#a855f7;--ora:#ff8c42;
+  --wh:#f2f2f5;--wh2:#a0a0b0;--wh3:#5a5a70;
+  --bd:#1e1e28;--bd2:#2a2a38;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--wh);min-height:100vh;font-size:13px;font-family:var(--sans)}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+/* NAV */
+.nav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;height:52px;position:sticky;top:0;z-index:200}
+.logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--green);letter-spacing:2px;margin-right:24px}
+.logo span{color:var(--wh3)}
+.ntabs{display:flex;flex:1;height:52px}
+.ntab{background:none;border:none;border-bottom:2px solid transparent;color:var(--wh3);padding:0 16px;height:52px;cursor:pointer;font-size:12px;font-weight:500;font-family:var(--sans);transition:all .15s;white-space:nowrap}
+.ntab:hover{color:var(--wh)}.ntab.active{color:var(--green);border-bottom-color:var(--green)}
+.nav-r{display:flex;align-items:center;gap:10px;margin-left:auto}
+.rbadge{font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;font-family:var(--mono);letter-spacing:.5px}
+.r-own{background:var(--green);color:#000}.r-usr{background:#1a3a5c;color:#7ab3f0}
+.r-viw{background:var(--bg4);color:var(--wh3);border:1px solid var(--bd2)}
+.rsel{background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;font-family:var(--mono)}
+
+/* PAGES */
+.page{display:none;padding:22px;max-width:1600px;margin:0 auto}.page.active{display:block}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:14px;flex-wrap:wrap}
+.ph h1{font-size:19px;font-weight:600;letter-spacing:-.3px}
+.ph p{font-size:11px;color:var(--wh3);margin-top:3px}
+.ph-r{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+
+/* MODE BAR */
+.mbar{display:flex;gap:4px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px;margin-bottom:18px}
+.mbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border-radius:4px;border:none;background:none;color:var(--wh3);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);transition:all .15s;white-space:nowrap}
+.mbtn:hover{color:var(--wh);background:var(--bg4)}.mbtn.active{background:var(--green);color:#000}
+.mpanel{display:none}.mpanel.active{display:block}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.chd{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--bd);background:var(--bg3)}
+.chd.clk{cursor:pointer}
+.ctitle{font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:1px;flex:1;font-family:var(--mono)}
+.csub{font-size:11px;color:var(--wh3)}.ctog{color:var(--wh3);font-size:13px}
+.cbody{padding:15px}
+
+/* FORMS */
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;color:var(--wh3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-family:var(--mono)}
+.fg input,.fg select,.fg textarea{background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);border-radius:4px;padding:7px 9px;font-size:12px;outline:none;width:100%;transition:border-color .15s;font-family:var(--sans)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--green)}
+.fg input[readonly]{color:var(--wh3);cursor:not-allowed;background:var(--bg2)}
+.fg select option{background:var(--bg3)}
+.fg .tag{font-size:9px;margin-left:4px;padding:1px 5px;border-radius:2px;font-weight:700}
+.tag-a{background:var(--g3);color:var(--green)}.tag-f{background:#0a1a35;color:var(--blu)}
+.grid{display:grid;gap:11px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.gauto{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.date-a{border-color:var(--g2)!important}.date-f{border-color:var(--blu)!important;opacity:.85}
+
+/* BUTTONS */
+.btn{padding:7px 15px;border-radius:4px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;font-family:var(--sans)}
+.bg{background:var(--green);color:#000}.bg:hover{background:#00ffaa}.bg:disabled{opacity:.35;cursor:not-allowed}
+.bo{background:none;border:1px solid var(--bd2);color:var(--wh)}.bo:hover{border-color:var(--green);color:var(--green)}
+.bsm{padding:5px 10px;font-size:11px;border-radius:3px}.bxs{padding:3px 7px;font-size:10px;border-radius:2px}
+.arb{width:100%;background:none;border:1px dashed var(--bd2);color:var(--wh3);padding:9px;border-radius:4px;cursor:pointer;font-size:12px;transition:all .15s;font-family:var(--sans);margin-top:7px}
+.arb:hover{border-color:var(--green);color:var(--green)}
+
+/* CHIPS */
+.chip{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.3px}
+.cQ{background:#0a1a35;color:var(--blu);border:1px solid #3d8ef844}
+.cF{background:#0d2a1a;color:var(--green);border:1px solid #00c85344}
+.cSD{background:#1a1a08;color:var(--yel);border:1px solid #ffd60a44}
+.cSa{background:#1a0a20;color:var(--pur);border:1px solid #a855f744}
+.cP{background:#1a0a05;color:var(--ora);border:1px solid #ff8c4244}
+.cFAI{background:#0a0a1a;color:#7090f0;border:1px solid #4466ff44}
+.cPr{background:var(--g3);color:var(--green);border:1px solid var(--g2)}
+.cNS{background:var(--bg4);color:var(--wh3);border:1px solid var(--bd2)}
+.pcrit{background:var(--r2);color:var(--red);border:1px solid #ff3b5c44;font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-weight:700}
+.phigh{background:#1a1000;color:var(--yel);border:1px solid #ffd60a44;font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-weight:700}
+.pmed{background:#0a1a35;color:var(--blu);border:1px solid #3d8ef844;font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-weight:700}
+.plow{background:var(--bg4);color:var(--wh3);border:1px solid var(--bd2);font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-weight:700}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:6px;border:1px solid var(--bd)}
+.tw0{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--bg3);color:var(--wh3);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap;cursor:pointer;font-family:var(--mono)}
+thead th:hover{color:var(--wh)}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s}
+tbody tr:hover{background:var(--bg3)}
+tbody td{padding:7px 10px;vertical-align:middle}
+.mn{font-family:var(--mono);font-size:11px}
+.gc{color:var(--green)}.rc{color:var(--red)}.grc{color:var(--wh3)}.yc{color:var(--yel)}.bc{color:var(--blu)}
+
+/* FILTER BAR */
+.fbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:13px}
+.fbar input,.fbar select{background:var(--bg2);border:1px solid var(--bd2);color:var(--wh);padding:6px 9px;border-radius:4px;font-size:12px;outline:none;font-family:var(--sans)}
+.fbar input:focus,.fbar select:focus{border-color:var(--green)}
+.fbar input{width:170px}.fcnt{font-size:11px;color:var(--wh3);margin-left:auto;font-family:var(--mono)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;margin-bottom:18px}
+.mc{background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:13px 15px}
+.ml{font-size:10px;color:var(--wh3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;font-family:var(--mono)}
+.mv{font-size:24px;font-weight:700;color:var(--wh);line-height:1}
+.ms{font-size:10px;color:var(--wh3);margin-top:3px}
+.mc.mg .mv{color:var(--green)}.mc.mg{border-color:var(--g2)}
+.mc.mr .mv{color:var(--red)}.mc.mr{border-color:var(--red)}
+.mc.my .mv{color:var(--yel)}.mc.my{border-color:var(--yel)}
+.mc.mb .mv{color:var(--blu)}.mc.mb{border-color:var(--blu)}
+
+/* STAGE PICKER */
+.stage-picker{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.spill{padding:6px 14px;border-radius:99px;border:1px solid var(--bd2);background:none;color:var(--wh3);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--mono);transition:all .15s}
+.spill:hover{border-color:var(--green);color:var(--green)}
+.spill.active{background:var(--green);color:#000;border-color:var(--green)}
+.stage-fields{background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px}
+.stage-fields-title{font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600}
+
+/* SUPPLIER TABS */
+.sup-tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.stab{padding:6px 14px;border-radius:4px;border:1px solid var(--bd2);background:none;color:var(--wh3);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--mono);transition:all .15s;white-space:nowrap}
+.stab:hover{color:var(--wh)}.stab.active{border-color:var(--green);color:var(--green);background:var(--g3)}
+.stab.add-sup{border-style:dashed;color:var(--wh3)}.stab.add-sup:hover{border-color:var(--green);color:var(--green)}
+
+/* COST ROW */
+.cost-sec{background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:13px;margin-top:11px}
+.cost-title{font-size:10px;font-weight:700;color:var(--wh3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:11px;font-family:var(--mono)}
+.crow{display:grid;grid-template-columns:160px 1fr 1fr 85px;gap:9px;align-items:center;margin-bottom:7px}
+.crow-hdr{font-size:9px;color:var(--wh3);font-family:var(--mono);margin-bottom:3px}
+.clabel{font-size:11px;color:var(--wh3)}
+.ctotal{background:var(--bg2);border:1px solid var(--g2);border-radius:4px;padding:10px 13px;display:grid;grid-template-columns:160px 1fr 1fr;gap:9px;margin-top:8px;align-items:center}
+.ctl{font-size:12px;font-weight:700;color:var(--green);font-family:var(--mono)}
+.ctv{font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)}
+
+/* SUPPLIER CARD */
+.sup-card{background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;margin-bottom:12px}
+.sup-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.sup-name-badge{font-size:12px;font-weight:700;font-family:var(--mono);padding:4px 12px;border-radius:3px}
+
+/* SHOULD COST */
+.sc-row{display:grid;grid-template-columns:200px 1fr 1fr 1fr 90px;gap:9px;align-items:center;margin-bottom:8px}
+.sc-hdr{font-size:9px;color:var(--wh3);font-family:var(--mono);margin-bottom:3px}
+.sc-total{background:var(--bg2);border:2px solid var(--green);border-radius:6px;padding:14px;margin-top:12px}
+.sc-total-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd)}
+.sc-total-row:last-child{border:none;padding-top:10px}
+.sc-total-label{font-size:12px;color:var(--wh3);font-family:var(--mono)}
+.sc-total-val{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.gap-pos{color:var(--red)}.gap-neg{color:var(--green)}
+.commodity-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.cpill{padding:5px 13px;border-radius:99px;border:1px solid var(--bd2);background:none;color:var(--wh3);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--mono);transition:all .15s}
+.cpill:hover{border-color:var(--green);color:var(--green)}.cpill.active{background:var(--green);color:#000;border-color:var(--green)}
+
+/* ISSUE CARD */
+.ic{background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:13px;margin-bottom:9px;transition:border-color .15s}
+.ic:hover{border-color:var(--bd2)}.ic.iesc{border-left:3px solid var(--red)}
+.ihdr{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.iid{font-family:var(--mono);font-size:10px;color:var(--wh3)}
+.ibody{font-size:12px;color:var(--wh);margin-bottom:7px;line-height:1.5}
+.imeta{display:flex;gap:9px;flex-wrap:wrap;font-size:10px;color:var(--wh3);font-family:var(--mono)}
+.iparts{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.ipn{background:var(--bg3);border:1px solid var(--bd2);color:var(--green);font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:2px}
+.istrow{display:flex;gap:5px;align-items:center;margin-top:5px;flex-wrap:wrap}
+
+/* CHART */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.cc{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px}
+.ct{font-size:10px;color:var(--wh3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px;font-weight:600;font-family:var(--mono)}
+.cw{position:relative;height:210px}
+
+/* INTEGRATION */
+.isec{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:18px;margin-bottom:14px}
+.ititle{font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);letter-spacing:.5px;margin-bottom:13px;text-transform:uppercase}
+.msel{display:flex;gap:6px;margin-bottom:14px}
+.mopt{flex:1;padding:11px;border:1px solid var(--bd2);border-radius:6px;cursor:pointer;text-align:center;transition:all .15s}
+.mopt:hover{border-color:var(--green)}.mopt.active{border-color:var(--green);background:var(--g3)}
+.mico2{font-size:20px;display:block;margin-bottom:5px}
+.mlab{font-size:11px;font-weight:700;color:var(--wh);font-family:var(--mono)}.msub{font-size:10px;color:var(--wh3);margin-top:2px}
+.cst{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);padding:5px 10px;border-radius:3px}
+.cok{background:var(--g3);color:var(--green);border:1px solid var(--g2)}
+.cerr{background:var(--r2);color:var(--red);border:1px solid var(--red)}
+.cidl{background:var(--bg4);color:var(--wh3);border:1px solid var(--bd2)}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:500;align-items:center;justify-content:center;padding:18px}
+.mo.open{display:flex}
+.md{background:var(--bg2);border:1px solid var(--bd2);border-radius:10px;padding:22px;width:580px;max-width:100%;max-height:92vh;overflow-y:auto}
+.mdlg{width:820px}
+.mdtit{font-size:13px;font-weight:700;color:var(--green);margin-bottom:16px;font-family:var(--mono);letter-spacing:.5px}
+.mdft{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:13px;border-top:1px solid var(--bd)}
+
+/* BULK GRID */
+.bgwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:6px}
+.bgrid{border-collapse:collapse;font-size:11px;min-width:100%}
+.bgrid th{background:var(--bg3);color:var(--wh3);font-size:9px;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;border:1px solid var(--bd);white-space:nowrap;font-family:var(--mono)}
+.bgrid td{padding:2px 3px;border:1px solid #141418;vertical-align:middle}
+.bgrid td input,.bgrid td select{background:transparent;border:none;color:var(--wh);padding:5px 6px;font-size:11px;outline:none;width:100%;min-width:75px;font-family:var(--sans)}
+.bgrid td input:focus{background:var(--g3);border-radius:2px}
+.bgrid td input[readonly]{color:var(--wh3)}
+.bgrid tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+.pncell{font-family:var(--mono);color:var(--green);font-size:10px;padding:5px 8px;white-space:nowrap;background:var(--bg3)!important}
+.rnum{color:var(--wh3);font-size:9px;text-align:center;padding:5px 6px;background:var(--bg3)!important;font-family:var(--mono)}
+
+/* DROP ZONE */
+.dz{border:2px dashed var(--bd2);border-radius:8px;padding:38px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.dz:hover,.dz.drag{border-color:var(--green);background:var(--g3)}
+.dz .dico{font-size:34px;margin-bottom:9px}
+.dz p{color:var(--wh3);font-size:12px}.dz strong{color:var(--green)}
+
+/* INNER TABS */
+.itabs{display:flex;gap:4px;margin-bottom:14px}
+.itab{background:var(--bg3);border:1px solid var(--bd);color:var(--wh3);padding:5px 13px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--mono);transition:all .15s}
+.itab:hover{color:var(--wh)}.itab.active{background:var(--green);color:#000;border-color:var(--green)}
+
+/* LOCKED */
+.lmsg{background:var(--r2);border:1px solid var(--red);border-radius:6px;padding:9px 13px;color:var(--red);font-size:12px;margin-bottom:13px;display:none}
+.lmsg.show{display:block}
+
+/* AUDIT */
+.ae{display:flex;gap:11px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:11px}
+.at{font-family:var(--mono);color:var(--wh3);white-space:nowrap;min-width:75px}
+.aa{color:var(--green);font-family:var(--mono);font-size:10px;min-width:130px}
+
+/* CFIELD */
+.cft{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--bd2);border-radius:3px;padding:3px 8px;font-size:11px;font-family:var(--mono);color:var(--wh3)}
+.cft button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;line-height:1}
+
+/* COMPARISON */
+.wina{background:rgba(0,255,135,.04)!important}.winb{background:rgba(61,142,248,.04)!important}
+.dpos{color:var(--green);font-family:var(--mono);font-size:11px}
+.dneg{color:var(--red);font-family:var(--mono);font-size:11px}
+
+@media(max-width:900px){.chart-row{grid-template-columns:1fr}.crow,.sc-row{grid-template-columns:110px 1fr 1fr}}
+@media(max-width:600px){.gauto{grid-template-columns:1fr}.g2,.g3,.g4{grid-template-columns:1fr}.msel{flex-direction:column}}
+
+/* HANDOFF CHAIN */
+.hchain{margin-top:11px;border-top:1px solid var(--bd);padding-top:11px;}
+.hchain-title{font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;font-weight:600;}
+.hstep{display:flex;gap:0;position:relative;margin-bottom:0;}
+.hstep-line{display:flex;flex-direction:column;align-items:center;margin-right:10px;flex-shrink:0;}
+.hstep-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--green);background:var(--bg2);flex-shrink:0;margin-top:3px;position:relative;z-index:1;}
+.hstep-dot.active{background:var(--green);}
+.hstep-dot.closed{background:var(--g2);border-color:var(--g2);}
+.hstep-connector{width:2px;background:var(--bd2);flex:1;min-height:14px;margin:2px 0;}
+.hstep-body{flex:1;padding-bottom:12px;}
+.hstep-hdr{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;}
+.hteam-badge{font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:2px;}
+.hstep-time{font-size:10px;color:var(--wh3);font-family:var(--mono);}
+.hstep-note{font-size:12px;color:var(--wh2);line-height:1.5;}
+.hstep-arrow{font-size:10px;color:var(--wh3);font-family:var(--mono);margin-top:3px;}
+.handoff-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:3px;border:1px solid var(--green);background:var(--g3);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:all .15s;margin-top:8px;}
+.handoff-btn:hover{background:var(--green);color:#000;}
+.handoff-btn:disabled{opacity:.35;cursor:not-allowed;}
+.close-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:3px;border:1px solid var(--g2);background:var(--g3);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:all .15s;margin-top:8px;margin-left:6px;}
+.close-btn:hover{background:var(--green);color:#000;}
+.ic.my-turn{border-left:3px solid var(--green);box-shadow:0 0 0 1px var(--g2);}
+.ic-expand-btn{font-size:10px;color:var(--wh3);cursor:pointer;font-family:var(--mono);padding:2px 7px;border-radius:2px;border:1px solid var(--bd2);background:none;transition:all .15s;}
+.ic-expand-btn:hover{border-color:var(--green);color:var(--green);}
+.ic-body-expanded{display:none;}
+.ic-body-expanded.open{display:block;}
+
+/* ── ALERTS ── */
+.alert-banner{position:sticky;top:52px;z-index:190;background:var(--r2);border-bottom:2px solid var(--red);padding:7px 20px;display:none;align-items:center;gap:12px;flex-wrap:wrap}
+.alert-banner.show{display:flex}
+.alert-banner-msg{font-size:11px;color:var(--red);font-family:var(--mono);font-weight:700;flex:1}
+.alert-banner-count{background:var(--red);color:#fff;font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:2px;cursor:pointer;white-space:nowrap}
+.alert-banner-dismiss{color:var(--red);cursor:pointer;font-size:18px;padding:0 4px}
+.alert-card{background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.alert-card.crit{border-left:3px solid var(--red);background:var(--r2)}
+.alert-card.warn{border-left:3px solid var(--yel)}
+.alert-card.info{border-left:3px solid var(--blu)}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.alert-title{font-size:12px;font-weight:700;color:var(--wh);margin-bottom:3px}
+.alert-detail{font-size:11px;color:var(--wh3);line-height:1.5}
+.alert-tag{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:2px;display:inline-block;margin-right:4px}
+.alert-tag.crit{background:var(--r2);color:var(--red);border:1px solid var(--red)}
+.alert-tag.warn{background:#1a1a00;color:var(--yel);border:1px solid var(--yel)}
+.alert-tag.info{background:#0a1a35;color:var(--blu);border:1px solid var(--blu)}
+.af{padding:5px 12px;border-radius:99px;border:1px solid var(--bd2);background:none;color:var(--wh3);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--mono);transition:all .15s}
+.af:hover{border-color:var(--green);color:var(--green)}.af.active{background:var(--green);color:#000;border-color:var(--green)}
+/* ── SCORECARD ── */
+.score-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.score-bar-label{font-size:11px;color:var(--wh3);width:160px;flex-shrink:0}
+.score-bar-track{flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.score-val{font-size:12px;font-weight:700;font-family:var(--mono);width:36px;text-align:right}
+.score-badge{display:inline-block;padding:4px 12px;border-radius:3px;font-size:13px;font-weight:700;font-family:var(--mono)}
+.sc-A{background:#0d3320;color:var(--green);border:1px solid var(--g2)}
+.sc-B{background:#0a1a35;color:var(--blu);border:1px solid var(--blu)}
+.sc-C{background:#1a1a00;color:var(--yel);border:1px solid var(--yel)}
+.sc-D{background:var(--r2);color:var(--red);border:1px solid var(--red)}
+.sup-score-card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px}
+.sup-score-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+/* ── GATE REVIEW ── */
+.gate-card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:12px}
+.gate-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.gate-pn{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)}
+.gate-score{font-size:11px;font-family:var(--mono);font-weight:700;padding:3px 10px;border-radius:3px}
+.gate-green{background:var(--g3);color:var(--green);border:1px solid var(--g2)}
+.gate-amber{background:#1a1a00;color:var(--yel);border:1px solid var(--yel)}
+.gate-red{background:var(--r2);color:var(--red);border:1px solid var(--red)}
+.gate-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px}
+.gate-check{display:flex;align-items:flex-start;gap:8px;padding:6px 9px;background:var(--bg3);border-radius:4px;font-size:11px}
+.gate-check.pass{border-left:2px solid var(--green)}.gate-check.fail{border-left:2px solid var(--red)}
+.gate-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.gate-progress{height:6px;background:var(--bg4);border-radius:3px;margin-top:10px;overflow:hidden}
+.gate-progress-fill{height:100%;border-radius:3px;transition:width .4s}
+/* ── GANTT ── */
+.gantt-wrap{overflow-x:auto;position:relative}
+.gantt-table{border-collapse:collapse;min-width:900px;width:100%}
+.gantt-table th{background:var(--bg3);color:var(--wh3);font-size:9px;text-transform:uppercase;font-family:var(--mono);padding:7px 8px;border:1px solid var(--bd);white-space:nowrap;text-align:left}
+.gantt-table td{border:1px solid var(--bd);padding:0;vertical-align:middle}
+.gantt-label{padding:6px 10px;font-size:11px;white-space:nowrap;border-right:2px solid var(--bd2)}
+.gantt-pn{font-family:var(--mono);font-size:10px;color:var(--green)}
+.gantt-desc{font-size:10px;color:var(--wh3);overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.gantt-cell{position:relative;height:32px;background:var(--bg)}
+.gantt-bar{position:absolute;top:8px;height:16px;border-radius:2px;cursor:pointer;transition:opacity .15s}
+.gantt-bar:hover{opacity:.75}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.7;pointer-events:none}
+.gantt-tooltip{position:fixed;background:var(--bg2);border:1px solid var(--bd2);border-radius:6px;padding:10px 13px;font-size:11px;pointer-events:none;z-index:999;display:none;max-width:220px;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.gantt-tooltip.show{display:block}
+.gantt-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--wh3)}
+.gantt-leg-bar{width:20px;height:8px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px}
+/* ── DOCS ── */
+.docs-nav-item{padding:7px 14px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:7px;transition:all .15s;color:var(--wh3)}
+.docs-nav-item:hover{color:var(--wh);background:var(--bg3)}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo">NPI<span>/</span>PROC</div>
+  <div class="ntabs">
+    <button class="ntab active" onclick="showPage('master')">Master Data</button>
+    <button class="ntab" onclick="showPage('timeline')">Timeline</button>
+    <button class="ntab" onclick="showPage('gantt')">Gantt</button>
+    <button class="ntab" onclick="showPage('gate')">Gate Review</button>
+    <button class="ntab" onclick="showPage('issues')">Issue Log</button>
+    <button class="ntab" onclick="showPage('scorecard')">Scorecard</button>
+    <button class="ntab" onclick="showPage('shouldcost')">Should Cost</button>
+    <button class="ntab" onclick="showPage('analytics')">Analytics</button>
+    <button class="ntab" onclick="showPage('alerts')">🔔 Alerts</button>
+    <button class="ntab" onclick="showPage('integration')">Integration</button>
+    <button class="ntab" onclick="showPage('docs')">📖 Docs</button>
+  </div>
+  <div class="nav-r">
+    <select class="rsel" id="roleSelect" onchange="switchRole(this.value)">
+      <option value="viewer">👁 Viewer</option>
+      <option value="user">✏️ User</option>
+      <option value="owner" selected>👑 Owner</option>
+    </select>
+    <span class="rbadge r-own" id="roleBadge">OWNER</span>
+  </div>
+</nav>
+
+<!-- ══════════════ PAGE 1: MASTER DATA ══════════════ -->
+<div class="page active" id="page-master">
+  <div class="lmsg" id="locked-msg">🔒 Viewer access — switch to User or Owner to enter data.</div>
+  <div class="ph">
+    <div><h1>Master Data</h1><p>Part registry · Multi-supplier quotations · Landed cost · Stage timelines</p></div>
+    <div class="ph-r">
+      <button class="btn bo bsm" onclick="exportMasterLog()">📥 Export Log</button>
+      <button class="btn bg bsm" onclick="saveMasterRec()">💾 Save Record</button>
+    </div>
+  </div>
+  <div class="mbar">
+    <button class="mbtn active" id="mode-single" onclick="setMode('single')">📋 Single Entry</button>
+    <button class="mbtn" id="mode-bulk" onclick="setMode('bulk')">📊 Bulk Grid</button>
+    <button class="mbtn" id="mode-import" onclick="setMode('import')">📥 Excel Import</button>
+  </div>
+
+  <!-- SINGLE -->
+  <div class="mpanel active" id="panel-single">
+    <!-- PART INFO -->
+    <div class="card">
+      <div class="chd clk" onclick="toggleCard('pi')">
+        <span class="ctitle">Part Information</span>
+        <span class="csub">Core master fields + custom fields</span>
+        <span class="ctog" id="tog-pi">▲</span>
+      </div>
+      <div class="cbody" id="body-pi">
+        <div class="grid gauto" style="margin-bottom:11px;">
+          <div class="fg"><label>Part Number ★</label><input id="f_pn" placeholder="e.g. PN-1001" oninput="onPNInput()"></div>
+          <div class="fg"><label>Description ★</label><input id="f_desc" placeholder="Part description"></div>
+          <div class="fg"><label>Category</label>
+            <select id="f_cat"><option value="">—</option><option>Casting</option><option>Machining</option><option>Fabrication</option><option>Assembly</option><option>Electronics</option><option>Plastics</option><option>Rubber</option><option>Sheet Metal</option><option>Forging</option><option>Other</option></select></div>
+          <div class="fg"><label>Sub-Category</label><input id="f_sub" placeholder="e.g. Ferrous Casting"></div>
+          <div class="fg"><label>Annual Volume</label><input type="number" id="f_vol" placeholder="units"></div>
+          <div class="fg"><label>Commodity</label><input id="f_com" placeholder="e.g. Engine Components"></div>
+          <div class="fg"><label>Lead Country</label><input id="f_ctr" placeholder="e.g. India"></div>
+          <div class="fg"><label>Drawing No.</label><input id="f_dwg" placeholder="DRW-"></div>
+          <div class="fg"><label>Revision</label><input id="f_rev" placeholder="Rev A"></div>
+          <div class="fg"><label>Notes</label><input id="f_notes" placeholder="Remarks"></div>
+        </div>
+        <div style="margin-top:9px;">
+          <span style="font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;">Custom Fields</span>
+          <button class="btn bo bxs" onclick="addCF()" style="margin-left:8px;">+ Add Field</button>
+          <div id="cf-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;"></div>
+          <div class="grid gauto" id="cf-inputs" style="margin-top:9px;"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SUPPLIERS -->
+    <div class="card">
+      <div class="chd">
+        <span class="ctitle">Supplier Quotations & Landed Cost</span>
+        <span class="csub">USD primary · optional currency conversion</span>
+      </div>
+      <div class="cbody">
+        <div class="sup-tabs" id="sup-tabs">
+          <button class="stab add-sup" onclick="addSupplier()">+ Add Supplier</button>
+        </div>
+        <div id="sup-panels"></div>
+      </div>
+    </div>
+
+    <!-- SAVED PARTS -->
+    <div class="card">
+      <div class="chd">
+        <span class="ctitle">Saved Parts</span>
+        <span class="csub" id="saved-cnt">0 parts</span>
+        <input type="text" id="rec-srch" placeholder="Search..." style="background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);padding:5px 9px;border-radius:3px;font-size:11px;outline:none;width:145px;margin-left:auto;" oninput="renderParts()">
+      </div>
+      <div class="tw0">
+        <table><thead><tr>
+          <th>Part No</th><th>Description</th><th>Cat</th><th>Volume</th>
+          <th>Best Supplier</th><th>Best Landed $</th><th>Suppliers</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="parts-tb"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BULK -->
+  <div class="mpanel" id="panel-bulk">
+    <div class="card">
+      <div class="chd">
+        <span class="ctitle">Bulk Grid</span>
+        <div style="display:flex;gap:7px;margin-left:auto;align-items:center;">
+          <select id="bv" onchange="renderBulk()" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);padding:5px 8px;border-radius:3px;font-size:11px;outline:none;">
+            <option value="info">Part Info</option>
+            <option value="sup">Supplier 1 Costs</option>
+          </select>
+          <button class="btn bg bsm" onclick="saveBulkAll()">💾 Save All</button>
+        </div>
+      </div>
+      <div class="cbody" style="padding:9px;">
+        <div class="bgwrap"><table class="bgrid" id="bgrid"></table></div>
+        <button class="arb" onclick="addBR()">+ Add Row</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT -->
+  <div class="mpanel" id="panel-import">
+    <div class="card">
+      <div class="chd"><span class="ctitle">Excel Import</span></div>
+      <div class="cbody">
+        <button class="btn bg bsm" onclick="dlTpl()" style="margin-bottom:14px;">📄 Download Template</button>
+        <div class="dz" id="dz-master" onclick="document.getElementById('fi-master').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="hDrop(event,'master')">
+          <div class="dico">📂</div>
+          <p><strong>Drop Excel file here</strong> or click to browse</p>
+        </div>
+        <input type="file" id="fi-master" accept=".xlsx,.xls" style="display:none" onchange="hFile(this,'master')">
+        <div id="imp-prev"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE 2: TIMELINE ══════════════ -->
+<div class="page" id="page-timeline">
+  <div class="ph">
+    <div><h1>Timeline</h1><p>Select part · pick stage · enter actual &amp; forecast dates · auto-status</p></div>
+    <div class="ph-r">
+      <button class="btn bo bsm" onclick="exportTimeline()">📥 Export</button>
+      <button class="btn bg bsm" onclick="saveTLRec()">💾 Save</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="cbody">
+      <div class="grid gauto" style="margin-bottom:14px;">
+        <div class="fg"><label>Part Number</label>
+          <select id="tl-pn" onchange="onTLPNSelect()"><option value="">— select part —</option></select></div>
+        <div class="fg"><label>Description <span style="font-size:9px;color:var(--wh3);font-style:italic;">auto</span></label>
+          <input id="tl-desc" readonly></div>
+        <div class="fg"><label>Auto Status <span style="font-size:9px;color:var(--wh3);font-style:italic;">computed</span></label>
+          <input id="tl-status" readonly></div>
+        <div class="fg"><label>Current Bottleneck</label>
+          <input id="tl-block" placeholder="Describe current blocker"></div>
+      </div>
+      <div style="font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Select Stage to Enter Dates</div>
+      <div class="stage-picker" id="tl-stage-picker"></div>
+      <div class="stage-fields" id="tl-stage-fields" style="margin-top:0;">
+        <div style="color:var(--wh3);font-size:12px;font-family:var(--mono);">← Select a stage above</div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ══════════════ PAGE 3: ISSUE LOG ══════════════ -->
+<div class="page" id="page-issues">
+  <div class="ph">
+    <div><h1>Issue Log</h1><p>Cross-stage · Multi-part · Escalation · Bulk entry</p></div>
+    <div class="ph-r">
+      <button class="btn bo bsm" onclick="exportIssues()">📥 Export</button>
+      <button class="btn bo bsm" onclick="openBulkIss()">📋 Bulk Entry</button>
+      <button class="btn bg bsm" onclick="openIss()">+ Log Issue</button>
+    </div>
+  </div>
+  <div class="metrics" id="iss-met"></div>
+  <div class="fbar">
+    <input type="text" id="if-q" placeholder="Search issues..." oninput="renderIss()">
+    <select id="if-pn" onchange="renderIss()"><option value="">All Parts</option></select>
+    <select id="if-team" onchange="renderIss()"><option value="">All Teams</option><option>Procurement</option><option>Supply Chain</option><option>Internal Quality</option><option>SQE</option><option>External Quality</option><option>CM</option><option>Finance</option><option>Engineering</option></select>
+    <select id="if-stage" onchange="renderIss()"><option value="">All Stages</option><option>Quotation</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select>
+    <select id="if-sts" onchange="renderIss()"><option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Escalated</option><option>Closed</option></select>
+    <select id="if-pri" onchange="renderIss()"><option value="">All Priorities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <input type="date" id="if-from" onchange="renderIss()"><input type="date" id="if-to" onchange="renderIss()">
+    <span class="fcnt" id="iss-cnt"></span>
+  </div>
+  <div id="iss-list"></div>
+</div>
+
+<!-- ══════════════ PAGE 4: SHOULD COST ══════════════ -->
+<div class="page" id="page-shouldcost">
+  <div class="ph">
+    <div><h1>Should Cost Modelling</h1><p>Bottom-up cost build · Commodity-based breakdown · Gap vs quoted price</p></div>
+    <div class="ph-r">
+      <button class="btn bo bsm" onclick="exportSC()">📥 Export</button>
+      <button class="btn bg bsm" onclick="saveSC()">💾 Save Model</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <!-- LEFT: INPUTS -->
+    <div style="flex:1;min-width:320px;">
+      <div class="card">
+        <div class="chd"><span class="ctitle">Model Setup</span></div>
+        <div class="cbody">
+          <div class="grid g2" style="margin-bottom:12px;">
+            <div class="fg"><label>Part Number</label>
+              <select id="sc-pn" onchange="onSCPNSelect()"><option value="">— select part —</option></select></div>
+            <div class="fg"><label>Description <span style="font-size:9px;color:var(--wh3);">auto</span></label>
+              <input id="sc-desc" readonly></div>
+            <div class="fg"><label>Commodity Type</label>
+              <select id="sc-com"><option>Casting</option><option>Machining</option><option>Stamping</option><option>Forging</option><option>Injection Moulding</option><option>Assembly</option><option>Electronics</option><option>Fabrication</option><option>Other</option></select></div>
+            <div class="fg"><label>Annual Volume</label><input type="number" id="sc-vol" placeholder="units" oninput="calcSC()"></div>
+            <div class="fg"><label>Currency</label>
+              <select id="sc-cur" onchange="toggleSCConv()"><option value="USD">USD $</option><option value="other">Other (specify)</option></select></div>
+            <div class="fg" id="sc-conv-row" style="display:none;"><label>Conv Factor → USD</label>
+              <input type="number" id="sc-conv" value="1" step="0.001" oninput="calcSC()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMODITY BREAKDOWN -->
+      <div class="card">
+        <div class="chd"><span class="ctitle">Cost Breakdown</span><span class="csub">Build up from raw cost elements</span></div>
+        <div class="cbody">
+          <!-- Commodity pills to pre-fill fields -->
+          <div class="commodity-pills" id="com-pills"></div>
+
+          <div class="sc-row sc-hdr"><span></span><span style="font-family:var(--mono);">VALUE</span><span style="font-family:var(--mono);">USD</span><span style="font-family:var(--mono);">% TOTAL</span><span style="font-family:var(--mono);">NOTE</span></div>
+
+          <div class="sc-row"><span class="clabel">Material Cost</span><input type="number" id="sc_mat" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="sc_mat_u" readonly><span id="sc_mat_p" class="grc mn">—</span><input id="sc_mat_n" placeholder="e.g. Steel grade SAE1020" style="font-size:11px;"></div>
+          <div class="sc-row"><span class="clabel">Scrap / Yield Loss %</span><input type="number" id="sc_scrap" placeholder="0.0" step="0.1" oninput="calcSC()"><input type="number" id="sc_scrap_u" readonly><span id="sc_scrap_p" class="grc mn">—</span><input id="sc_scrap_n" placeholder="% of material"></div>
+          <div class="sc-row"><span class="clabel">Process / Mfg Cost</span><input type="number" id="sc_proc" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="sc_proc_u" readonly><span id="sc_proc_p" class="grc mn">—</span><input id="sc_proc_n" placeholder="e.g. cycle time × rate"></div>
+          <div class="sc-row"><span class="clabel">Direct Labour</span><input type="number" id="sc_lab" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="sc_lab_u" readonly><span id="sc_lab_p" class="grc mn">—</span><input id="sc_lab_n" placeholder="hrs × rate/hr"></div>
+          <div class="sc-row"><span class="clabel">Factory Overhead %</span><input type="number" id="sc_oh" placeholder="0.0" step="0.1" oninput="calcSC()"><input type="number" id="sc_oh_u" readonly><span id="sc_oh_p" class="grc mn">—</span><input id="sc_oh_n" placeholder="% of (mat+proc+lab)"></div>
+          <div class="sc-row"><span class="clabel">Packaging</span><input type="number" id="sc_pkg" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="sc_pkg_u" readonly><span id="sc_pkg_p" class="grc mn">—</span><input id="sc_pkg_n" placeholder="per unit"></div>
+          <div class="sc-row"><span class="clabel">Logistics / Freight</span><input type="number" id="sc_log" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="sc_log_u" readonly><span id="sc_log_p" class="grc mn">—</span><input id="sc_log_n" placeholder="per unit delivered"></div>
+          <div class="sc-row"><span class="clabel">Profit Margin %</span><input type="number" id="sc_pm" placeholder="0.0" step="0.1" oninput="calcSC()"><input type="number" id="sc_pm_u" readonly><span id="sc_pm_p" class="grc mn">—</span><input id="sc_pm_n" placeholder="% of subtotal"></div>
+
+          <!-- Custom cost fields -->
+          <div id="sc-custom-rows"></div>
+          <button class="arb" onclick="addSCField()" style="margin-top:10px;">+ Add Custom Cost Element</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div style="flex:1;min-width:280px;">
+      <div class="card">
+        <div class="chd"><span class="ctitle">Should Cost Result</span></div>
+        <div class="cbody">
+          <div class="sc-total">
+            <div class="sc-total-row"><span class="sc-total-label">MATERIAL COST</span><span class="sc-total-val" id="sr-mat">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ PROCESS COST</span><span class="sc-total-val" id="sr-proc">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ LABOUR</span><span class="sc-total-val" id="sr-lab">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ OVERHEAD</span><span class="sc-total-val" id="sr-oh">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ PACKAGING</span><span class="sc-total-val" id="sr-pkg">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ LOGISTICS</span><span class="sc-total-val" id="sr-log">$ 0.00</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">+ MARGIN</span><span class="sc-total-val" id="sr-pm">$ 0.00</span></div>
+            <div id="sc-custom-results"></div>
+            <div class="sc-total-row" style="border-top:2px solid var(--green);margin-top:6px;">
+              <span style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green);">= SHOULD COST (USD)</span>
+              <span style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green);" id="sr-total">$ 0.00</span>
+            </div>
+            <div class="sc-total-row">
+              <span class="sc-total-label">INR EQUIVALENT</span>
+              <span class="sc-total-val" style="color:var(--yel);" id="sr-inr">₹ —</span>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:13px;">
+            <div style="font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">vs Quoted Price</div>
+            <div class="fg" style="margin-bottom:8px;"><label>Select Supplier Quote to Compare</label>
+              <select id="sc-cmp-sup" onchange="calcSC()"><option value="">— select supplier —</option></select></div>
+            <div class="sc-total-row"><span class="sc-total-label">QUOTED PRICE (USD)</span><span class="sc-total-val" id="sr-quoted">—</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">SHOULD COST (USD)</span><span class="sc-total-val" id="sr-sc2">—</span></div>
+            <div class="sc-total-row" style="border-top:2px solid var(--bd2);margin-top:6px;">
+              <span style="font-size:13px;font-weight:700;font-family:var(--mono);">GAP (Quoted − Should)</span>
+              <span style="font-size:16px;font-weight:700;font-family:var(--mono);" id="sr-gap">—</span>
+            </div>
+            <div class="sc-total-row">
+              <span class="sc-total-label">GAP %</span>
+              <span class="sc-total-val" id="sr-gappct" style="font-size:14px;">—</span>
+            </div>
+          </div>
+
+          <!-- Annual impact -->
+          <div style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:13px;">
+            <div style="font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Annual Impact</div>
+            <div class="sc-total-row"><span class="sc-total-label">ANNUAL VOLUME</span><span class="sc-total-val" id="sr-vol">—</span></div>
+            <div class="sc-total-row"><span class="sc-total-label">TOTAL ANNUAL SHOULD</span><span class="sc-total-val" id="sr-ann-sc">—</span></div>
+            <div class="sc-total-row" style="border-top:2px solid var(--bd2);margin-top:6px;">
+              <span style="font-size:13px;font-weight:700;font-family:var(--mono);">ANNUAL SAVING POTENTIAL</span>
+              <span style="font-size:16px;font-weight:700;font-family:var(--mono);" id="sr-ann-sav">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAVED MODELS -->
+      <div class="card">
+        <div class="chd"><span class="ctitle">Saved Models</span><span class="csub" id="sc-cnt">0 models</span></div>
+        <div class="tw0">
+          <table><thead><tr>
+            <th>Part No</th><th>Commodity</th><th>Should Cost $</th><th>Quoted $</th><th>Gap $</th><th>Gap %</th>
+          </tr></thead>
+          <tbody id="sc-tb"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE 5: ANALYTICS ══════════════ -->
+<div class="page" id="page-analytics">
+  <div class="ph"><div><h1>Analytics</h1><p>Supplier comparison · Issue heatmap · Should cost vs quoted</p></div></div>
+  <div class="itabs">
+    <button class="itab active" onclick="showAna('cmp',this)">Supplier Comparison</button>
+    <button class="itab" onclick="showAna('iss',this)">Issue Analysis</button>
+    <button class="itab" onclick="showAna('sc',this)">Should Cost</button>
+  </div>
+  <div id="ana-cmp">
+    <div class="metrics" id="cmp-met"></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="chd"><span class="ctitle">Landed Cost — All Suppliers</span><span class="csub">Green = lowest cost</span></div>
+      <div class="tw0"><table><thead><tr id="cmp-thead"></tr></thead><tbody id="cmp-tb"></tbody></table></div>
+    </div>
+    <div class="chart-row">
+      <div class="cc"><div class="ct">Landed Cost per Part (USD)</div><div class="cw"><canvas id="ch-cmp"></canvas></div></div>
+      <div class="cc"><div class="ct">Portfolio Saving — Best Supplier Each Part</div><div class="cw"><canvas id="ch-sav"></canvas></div></div>
+    </div>
+  </div>
+  <div id="ana-iss" style="display:none;">
+    <div class="metrics" id="ai-met"></div>
+    <div class="chart-row">
+      <div class="cc"><div class="ct">Issues by Stage</div><div class="cw"><canvas id="ch-ist"></canvas></div></div>
+      <div class="cc"><div class="ct">Issues by Team</div><div class="cw"><canvas id="ch-iteam"></canvas></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="cc"><div class="ct">Status Breakdown</div><div class="cw"><canvas id="ch-istat"></canvas></div></div>
+      <div class="cc"><div class="ct">Days Delayed by Stage</div><div class="cw"><canvas id="ch-idel"></canvas></div></div>
+    </div>
+  </div>
+  <div id="ana-sc" style="display:none;">
+    <div class="metrics" id="sc-met"></div>
+    <div class="chart-row">
+      <div class="cc"><div class="ct">Should Cost vs Best Quote (USD)</div><div class="cw"><canvas id="ch-sc"></canvas></div></div>
+      <div class="cc"><div class="ct">Annual Saving Potential ($)</div><div class="cw"><canvas id="ch-scann"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: GANTT ══════════════ -->
+<div class="page" id="page-gantt">
+  <div class="ph">
+    <div><h1>Gantt View</h1><p>Visual timeline · Actual vs Forecast · Today line · Hover for details</p></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+    <select id="gantt-f-stage" onchange="renderGantt()" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--wh);padding:6px 9px;border-radius:4px;font-size:12px;outline:none;"><option value="">All Stages</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select>
+    <select id="gantt-f-status" onchange="renderGantt()" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--wh);padding:6px 9px;border-radius:4px;font-size:12px;outline:none;"><option value="">All Statuses</option><option>Not Started</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select>
+    <input type="text" id="gantt-search" placeholder="Search part..." oninput="renderGantt()" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--wh);padding:6px 9px;border-radius:4px;font-size:12px;outline:none;width:150px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+      <span style="font-size:11px;color:var(--wh3);">Months:</span>
+      <select id="gantt-months" onchange="renderGantt()" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--wh);padding:6px 8px;border-radius:4px;font-size:12px;outline:none;"><option value="3">3</option><option value="6" selected>6</option><option value="9">9</option><option value="12">12</option></select>
+    </div>
+  </div>
+  <div class="gantt-legend">
+    <span><span class="gantt-leg-bar" style="background:#00ff8766;border:1px solid #00ff87;"></span>Actual</span>
+    <span><span class="gantt-leg-bar" style="background:#3d8ef855;border:1px dashed #3d8ef8;"></span>Forecast</span>
+    <span><span class="gantt-leg-bar" style="background:var(--red);width:2px;height:14px;"></span>Today</span>
+    <span><span class="gantt-leg-bar" style="background:var(--red);"></span>Late actual</span>
+  </div>
+  <div class="card"><div class="gantt-wrap" id="gantt-wrap"><div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">Add parts with timeline data to see Gantt chart</div></div></div>
+</div>
+
+<!-- ══════════════ PAGE: GATE REVIEW ══════════════ -->
+<div class="page" id="page-gate">
+  <div class="ph">
+    <div><h1>Gate Review</h1><p>Stage-gate readiness · Checklist per part · Traffic light status</p></div>
+    <div class="ph-r">
+      <select id="gate-f-stage" onchange="renderGate()" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);padding:6px 10px;border-radius:4px;font-size:12px;outline:none;"><option value="">All Gates</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select>
+      <select id="gate-f-traffic" onchange="renderGate()" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--wh);padding:6px 10px;border-radius:4px;font-size:12px;outline:none;"><option value="">All</option><option value="green">🟢 Ready</option><option value="amber">🟡 Partial</option><option value="red">🔴 Not Ready</option></select>
+    </div>
+  </div>
+  <div class="metrics" id="gate-met"></div>
+  <div id="gate-list"><div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">Add parts with timeline data to see gate readiness</div></div>
+</div>
+
+<!-- ══════════════ PAGE: SCORECARD ══════════════ -->
+<div class="page" id="page-scorecard">
+  <div class="ph"><div><h1>Supplier Scorecard</h1><p>Auto-scored 0–100 · Price · Quality · Delivery · Responsiveness</p></div></div>
+  <div class="metrics" id="sc-met-top"></div>
+  <div id="scorecard-list"><div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">Add suppliers with quotes and issue data to generate scorecards</div></div>
+</div>
+
+<!-- ══════════════ PAGE: ALERTS ══════════════ -->
+<div class="page" id="page-alerts">
+  <div class="ph">
+    <div><h1>🔔 Alerts</h1><p>System-wide alerts · Issue ageing · Configurable thresholds</p></div>
+    <div class="ph-r"><button class="btn bo bsm" onclick="renderAlerts()">↻ Refresh</button></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="chd clk" onclick="toggleCard('alert-cfg')">
+      <span class="ctitle">Alert Thresholds — Settings</span>
+      <span class="csub">Configure when warnings and escalations trigger</span>
+      <span class="ctog" id="tog-alert-cfg">▼</span>
+    </div>
+    <div class="cbody" id="body-alert-cfg" style="display:none;">
+      <div class="grid gauto">
+        <div class="fg"><label>Issue — warn after X days (since last action)</label><input type="number" id="cfg-iss-warn" value="5" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Issue — escalate after X days (since last action)</label><input type="number" id="cfg-iss-esc" value="10" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Issue — warn after X days (since logged)</label><input type="number" id="cfg-iss-warn2" value="7" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Issue — escalate after X days (since logged)</label><input type="number" id="cfg-iss-esc2" value="14" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Part stuck in same stage (days)</label><input type="number" id="cfg-stuck" value="30" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Should cost gap threshold (%)</label><input type="number" id="cfg-sc-gap" value="20" min="1" onchange="saveAlertCfg()"></div>
+        <div class="fg"><label>Open issues per team (trigger alert)</label><input type="number" id="cfg-sup-iss" value="3" min="1" onchange="saveAlertCfg()"></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="af active" id="af-all" onclick="setAlertFilter('all',this)">All</button>
+    <button class="af" id="af-crit" onclick="setAlertFilter('crit',this)">🚨 Critical</button>
+    <button class="af" id="af-warn" onclick="setAlertFilter('warn',this)">⚠️ Warning</button>
+    <button class="af" id="af-info" onclick="setAlertFilter('info',this)">ℹ️ Info</button>
+    <span id="alert-total-count" style="font-size:11px;color:var(--wh3);font-family:var(--mono);margin-left:auto;"></span>
+  </div>
+  <div id="alerts-list"></div>
+</div>
+
+<!-- ══════════════ PAGE: DOCS ══════════════ -->
+<div class="page" id="page-docs">
+  <div class="ph"><div><h1>📖 Documentation</h1><p>Feature guide · How to use · Roadmap</p></div></div>
+  <div style="display:grid;grid-template-columns:210px 1fr;gap:16px;align-items:start;">
+    <div style="position:sticky;top:70px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;overflow:hidden;">
+      <div style="padding:10px 14px;background:var(--bg3);font-size:10px;color:var(--green);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;font-weight:700;">Contents</div>
+      <div id="docs-nav"></div>
+    </div>
+    <div id="docs-content"></div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE 6: INTEGRATION ══════════════ -->
+<div class="page" id="page-integration">
+  <div class="ph"><div><h1>Integration Settings</h1><p>Excel write-back · Merge preview · Master log</p></div></div>
+  <div class="isec">
+    <div class="ititle">📁 File Location Mode</div>
+    <div class="msel">
+      <div class="mopt active" id="im-local" onclick="setIM('local')"><span class="mico2">💻</span><div class="mlab">LOCAL TEST</div><div class="msub">Download to verify</div></div>
+      <div class="mopt" id="im-od" onclick="setIM('od')"><span class="mico2">☁️</span><div class="mlab">ONEDRIVE</div><div class="msub">Graph API</div></div>
+      <div class="mopt" id="im-sp" onclick="setIM('sp')"><span class="mico2">🏢</span><div class="mlab">SHAREPOINT</div><div class="msub">Document library</div></div>
+    </div>
+    <div class="grid gauto">
+      <div class="fg" style="grid-column:1/-1"><label>File Path / URL</label><input id="int-path" placeholder="https://yourorg.sharepoint.com/sites/NPI/Shared Documents/tracker.xlsx"></div>
+      <div class="fg"><label>Unique Key</label><select id="int-key"><option>Part Number</option><option>Part Number + Supplier</option><option>Part Number + Stage + Supplier + Date Range</option></select></div>
+      <div class="fg"><label>Write Mode</label><select id="int-wm"><option value="gaps">Fill gaps only — SAFE</option><option value="force">Force update (Owner only)</option></select></div>
+      <div class="fg"><label>INR Rate (1 USD = ? INR)</label><input type="number" id="inr-rate" value="83.5" step="0.1" oninput="setINR()"></div>
+    </div>
+    <div style="display:flex;gap:9px;align-items:center;margin-top:13px;">
+      <button class="btn bo bsm" onclick="testConn()">🔌 Test Connection</button>
+      <span class="cst cidl" id="conn-st">● NOT TESTED</span>
+    </div>
+  </div>
+  <div class="isec">
+    <div class="ititle">🔀 Merge Preview</div>
+    <div style="background:var(--g3);border:1px solid var(--g2);border-radius:5px;padding:11px 13px;margin-bottom:13px;font-size:12px;color:var(--wh3);">
+      <strong style="color:var(--green);">Safe write-back:</strong> Upload your existing Excel tracker below. System previews what changes. Fill gaps only = existing data never overwritten.
+    </div>
+    <div class="dz" id="dz-merge" onclick="document.getElementById('fi-merge').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="hDrop(event,'merge')">
+      <div class="dico">🔀</div><p><strong>Drop existing Excel tracker here</strong></p>
+    </div>
+    <input type="file" id="fi-merge" accept=".xlsx" style="display:none" onchange="hFile(this,'merge')">
+    <div id="merge-prev"></div>
+  </div>
+  <div class="isec">
+    <div class="ititle">📊 Master Log Export</div>
+    <p style="font-size:12px;color:var(--wh3);margin-bottom:13px;">All data · Part Master · Quotations · Timeline · Issues · Should Cost · Audit Trail</p>
+    <button class="btn bg" onclick="exportMasterLog()">📥 Download Master Log</button>
+    <div style="margin-top:16px;">
+      <div style="font-size:10px;color:var(--wh3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">Recent Audit Trail</div>
+      <div id="audit-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ISSUE MODAL -->
+<div class="mo" id="mo-iss">
+  <div class="md mdlg">
+    <div class="mdtit">LOG ISSUE</div>
+    <div class="grid g2" style="margin-bottom:12px;">
+      <div class="fg"><label>Part Numbers (comma sep)</label><input id="im-pns" placeholder="PN-1001, PN-1002" style="font-family:var(--mono)"></div>
+      <div class="fg"><label>Raised By Team</label><select id="im-team"><option value="">— select —</option><option>Procurement</option><option>Supply Chain</option><option>Internal Quality</option><option>SQE</option><option>External Quality</option><option>CM</option><option>Finance</option><option>Engineering</option></select></div>
+    </div>
+    <div class="grid g3" style="margin-bottom:12px;">
+      <div class="fg"><label>Current Stage (where raised)</label><select id="im-cs"><option>Quotation</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select></div>
+      <div class="fg"><label>Origin Stage (root cause)</label><select id="im-os"><option value="">— same as current —</option><option>Quotation</option><option>Feasibility</option><option>SDR</option><option>Sample/Proto</option><option>PPAP</option><option>FAI/Validation</option><option>Production</option></select></div>
+      <div class="fg"><label>Affected Stages (comma sep)</label><input id="im-aff" placeholder="e.g. Feasibility, PPAP"></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px;"><label>Issue Description ★</label><textarea id="im-desc" rows="3" style="resize:vertical;"></textarea></div>
+    <div class="grid g2" style="margin-bottom:12px;">
+      <div class="fg"><label>Root Cause</label><input id="im-root"></div>
+      <div class="fg"><label>Action Taken / Planned</label><input id="im-act"></div>
+      <div class="fg"><label>Priority</label><select id="im-pri"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+      <div class="fg"><label>Status</label><select id="im-sts"><option>Open</option><option>In Progress</option><option>Escalated</option><option>Closed</option></select></div>
+      <div class="fg"><label>Issue Date</label><input type="date" id="im-date"></div>
+      <div class="fg"><label>Target Resolution</label><input type="date" id="im-tgt"></div>
+      <div class="fg"><label>Days Delayed</label><input type="number" id="im-days" placeholder="0"></div>
+      <div class="fg"><label>Escalation Flag</label><select id="im-esc"><option value="">None</option><option value="mgmt">Management Attention</option><option value="sup">Supplier Action Required</option><option value="cust">Customer Impact</option><option value="crit">Critical — Immediate Action</option></select></div>
+    </div>
+    <div class="mdft"><button class="btn bo" onclick="closeIss()">Cancel</button><button class="btn bg" onclick="saveIssue()">Save Issue</button></div>
+  </div>
+</div>
+
+<!-- BULK ISSUE MODAL -->
+<div class="mo" id="mo-bulk-iss">
+  <div class="md mdlg">
+    <div class="mdtit">BULK ISSUE ENTRY</div>
+    <div style="overflow-x:auto;">
+      <table style="font-size:11px;border-collapse:collapse;width:100%;min-width:700px;">
+        <thead><tr style="background:var(--bg3);">
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Part No(s)</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Description</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Current Stage</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Origin Stage</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Team</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Priority</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Status</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);font-family:var(--mono);font-size:9px;text-transform:uppercase;">Date</th>
+          <th style="padding:6px 8px;border:1px solid var(--bd);"></th>
+        </tr></thead>
+        <tbody id="bulk-iss-rows"></tbody>
+      </table>
+    </div>
+    <button class="arb" onclick="addBIRow()">+ Add Row</button>
+    <div class="mdft"><button class="btn bo" onclick="closeBulkIss()">Cancel</button><button class="btn bg" onclick="saveBulkIss()">Save All</button></div>
+  </div>
+</div>
+
+<!-- HANDOFF MODAL -->
+<div class="mo" id="mo-handoff">
+  <div class="md">
+    <div class="mdtit">RESOLVE & HAND OFF</div>
+    <div style="background:var(--g3);border:1px solid var(--g2);border-radius:5px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--wh3);">
+      Issue: <span id="ho-iss-id" style="color:var(--green);font-family:var(--mono);font-weight:700;"></span> &nbsp;·&nbsp; Current owner: <span id="ho-cur-team" style="color:var(--yel);font-weight:700;"></span>
+    </div>
+    <div class="grid g2" style="margin-bottom:12px;">
+      <div class="fg" style="grid-column:1/-1;"><label>Resolution Note — what did your team do?</label>
+        <textarea id="ho-note" rows="3" placeholder="Describe what was resolved / completed by your team..." style="resize:vertical;"></textarea></div>
+      <div class="fg"><label>Pass To (next responsible team)</label>
+        <select id="ho-next-team">
+          <option value="">— select team —</option>
+          <option>Procurement</option><option>Supply Chain</option><option>Internal Quality</option>
+          <option>SQE</option><option>External Quality</option><option>CM</option>
+          <option>Finance</option><option>Engineering</option>
+          <option value="__close__">✓ Close Issue (no further action)</option>
+        </select></div>
+      <div class="fg"><label>Target Date for Next Team</label>
+        <input type="date" id="ho-tgt"></div>
+      <div class="fg"><label>New Priority (optional)</label>
+        <select id="ho-pri"><option value="">Keep current</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="fg"><label>New Status</label>
+        <select id="ho-sts"><option value="In Progress">In Progress</option><option value="Escalated">Escalated</option><option value="Open">Open</option></select></div>
+    </div>
+    <div class="mdft">
+      <button class="btn bo" onclick="closeHandoff()">Cancel</button>
+      <button class="btn bg" onclick="confirmHandoff()">✓ Resolve & Hand Off</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="mo" id="mo-confirm">
+  <div class="md mdlg">
+    <div class="mdtit" id="conf-title">CONFIRM IMPORT</div>
+    <div id="conf-body" style="max-height:420px;overflow-y:auto;font-size:12px;"></div>
+    <div class="mdft"><button class="btn bo" onclick="document.getElementById('mo-confirm').classList.remove('open')">Cancel</button><button class="btn bg" onclick="confirmImp()">✓ Confirm</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let role='owner', inrRate=83.5;
+let parts={}, timelines={}, issues=[], scModels={}, auditLog=[], cfDefs=[], bulkRows=[];
+let pendImp=null, cmpSK='pn', cmpSD=1;
+let charts={};
+let suppliers=[];      // [{id,name,color}]
+let activeSup=null;    // currently shown supplier tab
+let scCustFields=[];   // should cost custom cost elements
+let curTLStage=null, curMasterStage=null;
+
+const STAGES=['Quotation','Feasibility','SDR','Sample/Proto','PPAP','FAI/Validation','Production'];
+const TEAMS=['Procurement','Supply Chain','Internal Quality','SQE','External Quality','CM','Finance','Engineering'];
+const SUP_COLORS=['#00ff87','#3d8ef8','#a855f7','#ffd60a','#ff8c42','#ff3b5c','#00c8c8'];
+const COMMODITIES=['Casting','Machining','Stamping','Forging','Injection Moulding','Assembly','Electronics','Fabrication'];
+
+// Stage date field definitions
+const STAGE_FIELDS={
+  'Quotation':[
+    {l:'RFQ Sent',k:'rfqSent',t:'date',tag:'actual'},
+    {l:'RFQ Target',k:'rfqTarget',t:'date',tag:'forecast'},
+    {l:'Quote Received',k:'quoteRec',t:'date',tag:'actual'},
+    {l:'Project Start',k:'projStart',t:'date',tag:'actual'},
+    {l:'Feasibility Needed?',k:'feasNeeded',t:'yn'},
+  ],
+  'Feasibility':[
+    {l:'Feas Forecast',k:'feasFore',t:'date',tag:'forecast'},
+    {l:'Feas Raised',k:'feasRaised',t:'date',tag:'actual'},
+    {l:'Feas Approved',k:'feasAppr',t:'date',tag:'actual'},
+    {l:'RFI',k:'rfi',t:'date',tag:'actual'},
+    {l:'SDR Required?',k:'sdrReq',t:'yn'},
+  ],
+  'SDR':[
+    {l:'SDR Forecast',k:'sdrFore',t:'date',tag:'forecast'},
+    {l:'SDR Raised',k:'sdrRaised',t:'date',tag:'actual'},
+    {l:'SDR Approved',k:'sdrAppr',t:'date',tag:'actual'},
+  ],
+  'Sample/Proto':[
+    {l:'Sample Required?',k:'sampReq',t:'yn'},
+    {l:'Sample Readiness',k:'sampRead',t:'date',tag:'forecast'},
+    {l:'Sample Dispatch',k:'sampDisp',t:'date',tag:'actual'},
+    {l:'Sample Reached',k:'sampReach',t:'date',tag:'actual'},
+  ],
+  'PPAP':[
+    {l:'PPAP PO Sent',k:'ppapPO',t:'date',tag:'actual'},
+    {l:'PPAP Readiness',k:'ppapRead',t:'date',tag:'forecast'},
+    {l:'PPAP Doc to 3rd Party',k:'ppapDoc3',t:'date',tag:'actual'},
+    {l:'PPAP Doc Approval',k:'ppapDocA',t:'date',tag:'actual'},
+    {l:'PPAP Dispatch',k:'ppapDisp',t:'date',tag:'actual'},
+    {l:'PPAP Reached',k:'ppapReach',t:'date',tag:'actual'},
+    {l:'Actual PPAP LT (days)',k:'ppapLT',t:'num'},
+  ],
+  'FAI/Validation':[
+    {l:'FAI Planned',k:'faiPlan',t:'date',tag:'forecast'},
+    {l:'FAI Actual',k:'faiAct',t:'date',tag:'actual'},
+    {l:'FAI/Val Status',k:'faiSt',t:'text'},
+    {l:'Prod PO',k:'prodPO',t:'date',tag:'actual'},
+  ],
+  'Production':[
+    {l:'Prod Readiness',k:'prodRead',t:'date',tag:'forecast'},
+    {l:'Prod Lot Completion',k:'prodLot',t:'date',tag:'actual'},
+    {l:'Prod Dispatch',k:'prodDisp',t:'date',tag:'actual'},
+    {l:'Prod Lot Reached',k:'prodReach',t:'date',tag:'actual'},
+    {l:'Actual Prod LT (days)',k:'prodLT',t:'num'},
+  ],
+};
+
+// ═══════════════════════════════════════
+// PERMISSIONS & NAV
+// ═══════════════════════════════════════
+function ce(){return role!=='viewer';}
+function switchRole(r){
+  role=r;const b=document.getElementById('roleBadge');b.className='rbadge';
+  if(r==='owner'){b.classList.add('r-own');b.textContent='OWNER';}
+  else if(r==='user'){b.classList.add('r-usr');b.textContent='USER';}
+  else{b.classList.add('r-viw');b.textContent='VIEWER';}
+  document.getElementById('locked-msg').classList.toggle('show',!ce());
+}
+function showPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const ti={master:0,timeline:1,gantt:2,gate:3,issues:4,scorecard:5,shouldcost:6,analytics:7,alerts:8,integration:9,docs:10}[p];
+  document.querySelectorAll('.ntab')[ti]?.classList.add('active');
+  if(p==='timeline'){populateTLPartDrop();renderTLTable();}
+  if(p==='gantt'){renderGantt();}
+  if(p==='gate'){renderGate();}
+  if(p==='scorecard'){renderScorecard();}
+  if(p==='issues'){renderIssMet();renderIss();}
+  if(p==='alerts'){renderAlerts();}
+  if(p==='analytics'){renderCmp();renderIssAna();renderSCAna();}
+  if(p==='integration'){renderAudit();}
+  if(p==='shouldcost'){populateSCDrops();}
+  if(p==='docs'){renderDocs();}
+}
+function setMode(m){
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('mode-'+m).classList.add('active');
+  document.getElementById('panel-'+m).classList.add('active');
+  if(m==='bulk')renderBulk();
+}
+function toggleCard(id){
+  const b=document.getElementById('body-'+id),t=document.getElementById('tog-'+id);
+  const h=b.style.display==='none';b.style.display=h?'':'none';t.textContent=h?'▲':'▼';
+}
+function showAna(t,el){
+  document.querySelectorAll('.itab').forEach(x=>x.classList.remove('active'));el.classList.add('active');
+  ['cmp','iss','sc'].forEach(id=>document.getElementById('ana-'+id).style.display=id===t?'block':'none');
+  if(t==='cmp')renderCmp();if(t==='iss')renderIssAna();if(t==='sc')renderSCAna();
+}
+function setINR(){inrRate=parseFloat(document.getElementById('inr-rate').value)||83.5;calcSC();}
+
+// ═══════════════════════════════════════
+// STAGE PICKER BUILDER
+// ═══════════════════════════════════════
+function buildStagePicker(pickerEl, fieldsEl, storageKey, prefix){
+  pickerEl.innerHTML=STAGES.map(s=>`<button class="spill" onclick="selectStage('${s}','${storageKey}','${prefix}',this)">${s}</button>`).join('');
+}
+function selectStage(stage, storageKey, prefix, btn){
+  document.querySelectorAll(`#${prefix}-stage-picker .spill`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(prefix==='tl')curTLStage=stage;
+  else curMasterStage=stage;
+  renderStageFields(stage, storageKey, prefix);
+}
+function renderStageFields(stage, storageKey, prefix){
+  const fieldsEl=document.getElementById(prefix+'-stage-fields');
+  const fields=STAGE_FIELDS[stage];
+  if(!fields){fieldsEl.innerHTML='';return;}
+  const pn=prefix==='tl'?document.getElementById('tl-pn')?.value:document.getElementById('f_pn')?.value;
+  const existing=(timelines[pn]||{})[stage]||{};
+  const tagCol={actual:'color:var(--green)',forecast:'color:var(--blu)'};
+  fieldsEl.innerHTML=`
+    <div class="stage-fields-title">${stage} — ${fields.filter(f=>f.t==='date').length} date fields</div>
+    <div class="grid gauto">
+    ${fields.map(f=>{
+      const val=existing[f.k]||'';
+      const tagHtml=f.tag?`<span class="tag tag-${f.tag==='actual'?'a':'f'}">${f.tag}</span>`:'';
+      if(f.t==='date')return`<div class="fg"><label>${f.l}${tagHtml}</label><input type="date" id="${prefix}_${f.k}" value="${val}" class="${f.tag==='actual'?'date-a':'date-f'}"></div>`;
+      if(f.t==='yn')return`<div class="fg"><label>${f.l}</label><select id="${prefix}_${f.k}"><option${val==='Yes'?' selected':''}>Yes</option><option${val==='No'?' selected':''}>No</option></select></div>`;
+      if(f.t==='num')return`<div class="fg"><label>${f.l}</label><input type="number" id="${prefix}_${f.k}" value="${val}"></div>`;
+      return`<div class="fg"><label>${f.l}</label><input type="text" id="${prefix}_${f.k}" value="${val}" placeholder="${f.l}"></div>`;
+    }).join('')}
+    </div>`;
+}
+function getStageData(stage, prefix){
+  const fields=STAGE_FIELDS[stage];if(!fields)return{};
+  const obj={};
+  fields.forEach(f=>{const el=document.getElementById(prefix+'_'+f.k);if(el)obj[f.k]=el.value;});
+  return obj;
+}
+function calcAutoStatus(tl){
+  if(!tl)return'Not Started';
+  if(tl['Production']?.prodReach)return'Production';
+  if(tl['FAI/Validation']?.faiAct)return'FAI/Validation';
+  if(tl['PPAP']?.ppapPO)return'PPAP';
+  if(tl['Sample/Proto']?.sampDisp)return'Sample/Proto';
+  if(tl['SDR']?.sdrAppr)return'SDR';
+  if(tl['Feasibility']?.feasAppr||tl['Feasibility']?.feasRaised)return'Feasibility';
+  if(tl['Quotation']?.quoteRec||tl['Quotation']?.rfqSent)return'Quotation';
+  return'Not Started';
+}
+
+// ═══════════════════════════════════════
+// SUPPLIERS — DYNAMIC MULTI
+// ═══════════════════════════════════════
+function addSupplier(){
+  if(!ce())return;
+  const id='sup_'+Date.now();
+  const idx=suppliers.length;
+  const color=SUP_COLORS[idx%SUP_COLORS.length];
+  const name=`Supplier ${String.fromCharCode(65+idx)}`;
+  suppliers.push({id,name,color,data:{}});
+  activeSup=id;
+  renderSupTabs();
+  renderSupPanel();
+}
+function renderSupTabs(){
+  const tabsEl=document.getElementById('sup-tabs');
+  tabsEl.innerHTML=suppliers.map(s=>`
+    <button class="stab${activeSup===s.id?' active':''}" onclick="switchSup('${s.id}')" style="${activeSup===s.id?`border-color:${s.color};color:${s.color};background:${s.color}18;`:''}">
+      ${s.name}
+      ${suppliers.length>1?`<span onclick="event.stopPropagation();delSup('${s.id}')" style="margin-left:6px;color:var(--red);font-size:12px;cursor:pointer;">×</span>`:''}
+    </button>`).join('')+
+    `<button class="stab add-sup" onclick="addSupplier()">+ Add Supplier</button>`;
+}
+function switchSup(id){activeSup=id;renderSupTabs();renderSupPanel();}
+function delSup(id){
+  if(!confirm('Remove this supplier?'))return;
+  suppliers=suppliers.filter(s=>s.id!==id);
+  if(activeSup===id)activeSup=suppliers[0]?.id||null;
+  renderSupTabs();renderSupPanel();
+}
+function renderSupPanel(){
+  const el=document.getElementById('sup-panels');
+  if(!suppliers.length){el.innerHTML='<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:20px;">No suppliers added. Click + Add Supplier.</div>';return;}
+  const s=suppliers.find(x=>x.id===activeSup)||suppliers[0];
+  if(!s){el.innerHTML='';return;}
+  const d=s.data||{};
+  // check if other currency needed
+  const useOther=d.cur&&d.cur!=='USD';
+  el.innerHTML=`
+    <div class="sup-card">
+      <div class="sup-card-hdr">
+        <span class="sup-name-badge" style="background:${s.color}22;border:1px solid ${s.color};color:${s.color};">
+          <input value="${s.name}" style="background:transparent;border:none;color:${s.color};font-size:12px;font-weight:700;font-family:var(--mono);outline:none;width:120px;" onchange="renameS('${s.id}',this.value)">
+        </span>
+        <span style="font-size:11px;color:var(--wh3);">Landed: <strong style="color:${s.color};font-family:var(--mono);" id="sup_land_${s.id}">$ 0.00</strong></span>
+        <span style="font-size:11px;color:var(--yel);margin-left:8px;" id="sup_land_inr_${s.id}">₹ —</span>
+      </div>
+      <div class="grid g3" style="margin-bottom:12px;">
+        <div class="fg"><label>Quote Ref</label><input id="s_ref_${s.id}" value="${d.ref||''}" placeholder="QT-2026-001"></div>
+        <div class="fg"><label>Quote Date</label><input type="date" id="s_dt_${s.id}" value="${d.dt||''}"></div>
+        <div class="fg"><label>RFQ Sent <span class="tag tag-a">actual</span></label><input type="date" id="s_rfq_${s.id}" value="${d.rfq||''}" class="date-a"></div>
+        <div class="fg"><label>Quote Received <span class="tag tag-a">actual</span></label><input type="date" id="s_qr_${s.id}" value="${d.qr||''}" class="date-a"></div>
+        <div class="fg"><label>Currency</label>
+          <select id="s_cur_${s.id}" onchange="toggleSupConv('${s.id}')">
+            <option value="USD"${(!d.cur||d.cur==='USD')?' selected':''}>USD $ (default)</option>
+            <option value="other"${d.cur&&d.cur!=='USD'?' selected':''}>Other (add conversion)</option>
+          </select></div>
+        <div class="fg" id="s_conv_row_${s.id}" style="display:${useOther?'flex':'none'};flex-direction:column;gap:5px;">
+          <label>Currency Name &amp; Conv Factor → USD</label>
+          <div style="display:flex;gap:6px;">
+            <input id="s_curname_${s.id}" value="${d.curname||''}" placeholder="e.g. INR" style="width:70px;" oninput="calcSupL('${s.id}')">
+            <input type="number" id="s_conv_${s.id}" value="${d.conv||''}" placeholder="e.g. 0.012" step="0.0001" oninput="calcSupL('${s.id}')">
+          </div>
+        </div>
+      </div>
+      <div class="cost-sec" style="border-color:${s.color}44;">
+        <div class="cost-title">Cost Breakdown</div>
+        <div class="crow crow-hdr"><span style="font-family:var(--mono);font-size:9px;">ITEM</span><span style="font-family:var(--mono);font-size:9px;">ORIG CURRENCY</span><span style="font-family:var(--mono);font-size:9px;">USD</span><span style="font-family:var(--mono);font-size:9px;">% BASE</span></div>
+        ${['base|Base Price (unit)','log|Logistics %','wh|Warehousing %','ins|Insurance %','tar|Tariff / Duty %','oth|Other %'].map((row,i)=>{
+          const [k,lbl]=row.split('|');
+          const isP=i>0;
+          return`<div class="crow">
+            <span class="clabel">${lbl}</span>
+            <input type="number" id="s_${k}_${s.id}" value="${d[k]||''}" placeholder="0.0${isP?'':'0'}" step="0.0${isP?'1':'1'}" oninput="calcSupL('${s.id}')">
+            <input type="number" id="s_${k}_u_${s.id}" readonly>
+            <span id="s_${k}_p_${s.id}" class="grc mn">—</span>
+          </div>`;
+        }).join('')}
+        <div class="ctotal" style="border-color:${s.color};">
+          <span class="ctl" style="color:${s.color};">= LANDED COST</span>
+          <span class="ctv" style="color:${s.color};" id="s_land_${s.id}">$ 0.00</span>
+          <span class="ctv" style="color:var(--yel);" id="s_landinr_${s.id}">₹ —</span>
+        </div>
+      </div>
+    </div>`;
+  calcSupL(s.id);
+}
+function renameS(id,name){const s=suppliers.find(x=>x.id===id);if(s){s.name=name;renderSupTabs();}}
+function toggleSupConv(id){
+  const sel=document.getElementById('s_cur_'+id);
+  const row=document.getElementById('s_conv_row_'+id);
+  if(sel&&row)row.style.display=sel.value==='other'?'flex':'none';
+  calcSupL(id);
+}
+function calcSupL(id){
+  const g=k=>parseFloat(document.getElementById(k+'_'+id)?.value)||0;
+  const cur=document.getElementById('s_cur_'+id)?.value||'USD';
+  const conv=cur==='other'?g('s_conv'):1;
+  const base=g('s_base')*conv;
+  const logV=base*(g('s_log')/100);
+  const whV=base*(g('s_wh')/100);
+  const insV=base*(g('s_ins')/100);
+  const tarV=base*(g('s_tar')/100);
+  const othV=base*(g('s_oth')/100);
+  const land=base+logV+whV+insV+tarV+othV;
+  const sp=(k,v)=>{const el=document.getElementById('s_'+k+'_p_'+id);if(el)el.textContent=base?(v/base*100).toFixed(1)+'%':'—';}
+  const su=(k,v)=>{const el=document.getElementById('s_'+k+'_u_'+id);if(el)el.value=v?v.toFixed(2):'';}
+  su('base',base);su('log',logV);su('wh',whV);su('ins',insV);su('tar',tarV);su('oth',othV);
+  sp('base',base);sp('log',logV);sp('wh',whV);sp('ins',insV);sp('tar',tarV);sp('oth',othV);
+  ['s_land','sup_land'].forEach(prefix=>{
+    const el=document.getElementById(prefix+'_'+id);if(el)el.textContent='$ '+land.toFixed(2);
+  });
+  ['s_landinr','sup_land_inr'].forEach(prefix=>{
+    const el=document.getElementById(prefix+'_'+id);if(el)el.textContent=land?'₹ '+(land*inrRate).toFixed(0):'₹ —';
+  });
+  // store in supplier data
+  const s=suppliers.find(x=>x.id===id);if(!s)return;
+  s.data.land=land;s.data.base=g('s_base');s.data.log=g('s_log');s.data.wh=g('s_wh');s.data.ins=g('s_ins');s.data.tar=g('s_tar');s.data.oth=g('s_oth');
+  s.data.cur=document.getElementById('s_cur_'+id)?.value;
+  s.data.conv=g('s_conv');s.data.curname=document.getElementById('s_curname_'+id)?.value;
+  s.data.ref=document.getElementById('s_ref_'+id)?.value;s.data.dt=document.getElementById('s_dt_'+id)?.value;
+  s.data.rfq=document.getElementById('s_rfq_'+id)?.value;s.data.qr=document.getElementById('s_qr_'+id)?.value;
+}
+
+// ═══════════════════════════════════════
+// CUSTOM FIELDS
+// ═══════════════════════════════════════
+function addCF(){const nm=prompt('Custom field name:');if(!nm)return;const key=nm.replace(/\s+/g,'_').toLowerCase();if(cfDefs.find(f=>f.key===key)){alert('Already exists.');return;}cfDefs.push({nm,key});renderCF();}
+function removeCF(key){cfDefs=cfDefs.filter(f=>f.key!==key);renderCF();}
+function renderCF(){
+  document.getElementById('cf-tags').innerHTML=cfDefs.map(f=>`<div class="cft">${f.nm}<button onclick="removeCF('${f.key}')">×</button></div>`).join('');
+  document.getElementById('cf-inputs').innerHTML=cfDefs.map(f=>`<div class="fg"><label>${f.nm}</label><input id="cf_${f.key}" placeholder="${f.nm}"></div>`).join('');
+}
+
+// ═══════════════════════════════════════
+// PART NUMBER LOAD
+// ═══════════════════════════════════════
+function onPNInput(){
+  const pn=document.getElementById('f_pn').value.trim().toUpperCase();
+  document.getElementById('f_pn').value=pn;
+  const p=parts[pn];if(!p)return;
+  ['desc','sub','vol','com','ctr','dwg','rev','notes'].forEach(k=>{const el=document.getElementById('f_'+k);if(el&&p[k]!==undefined)el.value=p[k];});
+  document.getElementById('f_cat').value=p.cat||'';
+  if(p.suppliers){suppliers=[...p.suppliers.map(s=>({...s,data:{...s.data}}))];if(suppliers.length){activeSup=suppliers[0].id;renderSupTabs();renderSupPanel();}}
+  cfDefs.forEach(f=>{const el=document.getElementById('cf_'+f.key);if(el&&p.cf&&p.cf[f.key])el.value=p.cf[f.key];});
+}
+
+// ═══════════════════════════════════════
+// SAVE MASTER RECORD
+// ═══════════════════════════════════════
+function saveMasterRec(){
+  if(!ce())return alert('No edit permission.');
+  const pn=document.getElementById('f_pn').value.trim().toUpperCase();
+  if(!pn)return alert('Part Number required.');
+  const desc=document.getElementById('f_desc').value.trim();
+  if(!desc)return alert('Description required.');
+  // save supplier data from current panel
+  if(activeSup){suppliers.forEach(s=>calcSupL(s.id));}
+  // save stage data from master stage picker
+  if(curMasterStage){
+    if(!timelines[pn])timelines[pn]={};
+    timelines[pn][curMasterStage]=getStageData(curMasterStage,'ms');
+  }
+  const cf={};cfDefs.forEach(f=>{const el=document.getElementById('cf_'+f.key);if(el)cf[f.key]=el.value;});
+  const isNew=!parts[pn];
+  parts[pn]={pn,desc,cat:document.getElementById('f_cat').value,sub:document.getElementById('f_sub').value,vol:document.getElementById('f_vol').value,com:document.getElementById('f_com').value,ctr:document.getElementById('f_ctr').value,dwg:document.getElementById('f_dwg').value,rev:document.getElementById('f_rev').value,notes:document.getElementById('f_notes').value,suppliers:JSON.parse(JSON.stringify(suppliers)),cf,savedAt:new Date().toISOString(),by:role};
+  addAudit(isNew?'PART_ADDED':'PART_UPDATED',`${pn} — ${desc}`);
+  renderParts();updFilters();renderCmp();populateSCDrops();
+  const btn=document.querySelector('.ph-r .bg');if(btn){btn.textContent='✓ Saved!';setTimeout(()=>btn.textContent='💾 Save Record',1800);}
+}
+
+// ═══════════════════════════════════════
+// RENDER PARTS TABLE
+// ═══════════════════════════════════════
+function renderParts(){
+  const q=(document.getElementById('rec-srch')?.value||'').toLowerCase();
+  const rows=Object.values(parts).filter(p=>!q||[p.pn,p.desc,p.cat].join(' ').toLowerCase().includes(q));
+  document.getElementById('saved-cnt').textContent=Object.keys(parts).length+' parts';
+  const tb=document.getElementById('parts-tb');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--wh3);padding:28px;font-family:var(--mono);font-size:11px;">NO PARTS YET</td></tr>';return;}
+  tb.innerHTML=rows.map(p=>{
+    const sups=p.suppliers||[];
+    const landed=sups.map(s=>s.data?.land||0).filter(l=>l>0);
+    const bestL=landed.length?Math.min(...landed):0;
+    const bestS=sups.find(s=>s.data?.land===bestL);
+    return`<tr>
+      <td class="mn gc">${p.pn}</td><td>${p.desc}</td>
+      <td><span class="chip cNS" style="font-size:9px;">${p.cat||'—'}</span></td>
+      <td class="mn grc">${p.vol?Number(p.vol).toLocaleString():'—'}</td>
+      <td style="font-weight:700;font-family:var(--mono);color:${bestS?.color||'var(--wh3)'};">${bestS?.name||'—'}</td>
+      <td class="mn" style="color:${bestS?.color||'var(--wh3)'};">${bestL?'$'+bestL.toFixed(2):'—'}</td>
+      <td style="font-size:11px;">${sups.map(s=>`<span style="color:${s.color};font-family:var(--mono);font-size:10px;margin-right:6px;">${s.name}${s.data?.land?': $'+s.data.land.toFixed(2):''}</span>`).join('')}</td>
+      <td style="display:flex;gap:4px;"><button class="btn bo bxs" onclick="loadP('${p.pn}')">Edit</button><button class="bxs" style="background:var(--r2);border:1px solid var(--red);color:var(--red);border-radius:2px;cursor:pointer;" onclick="delP('${p.pn}')">Del</button></td>
+    </tr>`;
+  }).join('');
+}
+function loadP(pn){setMode('single');document.getElementById('f_pn').value=pn;onPNInput();window.scrollTo({top:0,behavior:'smooth'});}
+function delP(pn){if(!ce()||!confirm('Delete '+pn+'?'))return;delete parts[pn];delete timelines[pn];addAudit('PART_DELETED',pn);renderParts();renderCmp();}
+
+// ═══════════════════════════════════════
+// TIMELINE PAGE
+// ═══════════════════════════════════════
+function populateTLPartDrop(){
+  const sel=document.getElementById('tl-pn');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— select part —</option>'+Object.keys(parts).map(pn=>`<option value="${pn}">${pn} — ${parts[pn]?.desc||''}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+function onTLPNSelect(){
+  const pn=document.getElementById('tl-pn').value;
+  const p=parts[pn]||{};
+  document.getElementById('tl-desc').value=p.desc||'';
+  const tl=timelines[pn]||{};
+  document.getElementById('tl-status').value=calcAutoStatus(tl);
+  document.getElementById('tl-block').value=tl._bottleneck||'';
+  curTLStage=null;
+  document.querySelectorAll('#tl-stage-picker .spill').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tl-stage-fields').innerHTML='<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);">← Select a stage above</div>';
+}
+function saveTLRec(){
+  if(!ce())return alert('No edit permission.');
+  const pn=document.getElementById('tl-pn').value;if(!pn)return alert('Select a part first.');
+  if(!timelines[pn])timelines[pn]={};
+  if(curTLStage){timelines[pn][curTLStage]=getStageData(curTLStage,'tl');}
+  timelines[pn]._bottleneck=document.getElementById('tl-block').value;
+  const st=calcAutoStatus(timelines[pn]);
+  document.getElementById('tl-status').value=st;
+  addAudit('TIMELINE_SAVED',`${pn} — ${curTLStage||'no stage'} — status: ${st}`);
+  renderTLTable();
+  const btn=document.querySelector('#page-timeline .ph-r .bg');if(btn){btn.textContent='✓ Saved!';setTimeout(()=>btn.textContent='💾 Save',1800);}
+}
+function exportTimeline(){
+  const hdr=['Part No','Description','Status','Bottleneck','RFQ Sent','RFQ Target','Quote Rec','Feas Appr','SDR Appr','Samp Disp','PPAP PO','FAI Act','Prod Reached'];
+  const rows=Object.entries(timelines).map(([pn,tl])=>{
+    const p=parts[pn]||{};
+    return[pn,p.desc||'',calcAutoStatus(tl),tl._bottleneck||'',
+      tl.Quotation?.rfqSent||'',tl.Quotation?.rfqTarget||'',tl.Quotation?.quoteRec||'',
+      tl.Feasibility?.feasAppr||'',tl.SDR?.sdrAppr||'',tl['Sample/Proto']?.sampDisp||'',
+      tl.PPAP?.ppapPO||'',tl['FAI/Validation']?.faiAct||'',tl.Production?.prodReach||''];
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([hdr,...rows]),'Timeline');
+  XLSX.writeFile(wb,`timeline_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function renderTLTable(){
+  const q=(document.getElementById('tl-srch')?.value||'').toLowerCase();
+  const fs=document.getElementById('tl-f-status')?.value||'';
+  const stChipMap={Quotation:'cQ',Feasibility:'cF',SDR:'cSD','Sample/Proto':'cSa',PPAP:'cP','FAI/Validation':'cFAI',Production:'cPr','Not Started':'cNS'};
+  const rows=Object.entries(timelines).filter(([pn,tl])=>{
+    if(q&&![pn,(parts[pn]?.desc||''),tl._bottleneck||''].join(' ').toLowerCase().includes(q))return false;
+    if(fs&&calcAutoStatus(tl)!==fs)return false;
+    return true;
+  });
+  document.getElementById('tl-rec-cnt').textContent=rows.length+' parts tracked';
+  const tb=document.getElementById('tl-tb');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--wh3);padding:24px;font-family:var(--mono);font-size:11px;">NO TIMELINE DATA YET</td></tr>';return;}
+  tb.innerHTML=rows.map(([pn,tl])=>{
+    const st=calcAutoStatus(tl);
+    return`<tr>
+      <td class="mn gc">${pn}</td>
+      <td style="font-size:12px;">${parts[pn]?.desc||'—'}</td>
+      <td><span class="chip ${stChipMap[st]||'cNS'}">${st}</span></td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--wh3);">${tl._bottleneck||'—'}</td>
+      <td class="mn grc">${tl.Quotation?.rfqSent||'—'}</td>
+      <td class="mn grc">${tl.Feasibility?.feasAppr||'—'}</td>
+      <td class="mn grc">${tl.SDR?.sdrAppr||'—'}</td>
+      <td class="mn grc">${tl['Sample/Proto']?.sampDisp||'—'}</td>
+      <td class="mn grc">${tl.PPAP?.ppapPO||'—'}</td>
+      <td class="mn grc">${tl['FAI/Validation']?.faiAct||'—'}</td>
+      <td class="mn grc">${tl.Production?.prodReach||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// BULK GRID
+// ═══════════════════════════════════════
+function renderBulk(){
+  const v=document.getElementById('bv')?.value||'info';
+  const pns=Object.keys(parts);
+  while(bulkRows.length<Math.max(20,pns.length+5))bulkRows.push({pn:'',desc:'',cat:'',vol:'',com:'',ctr:'',notes:''});
+  pns.forEach((pn,i)=>{if(parts[pn])bulkRows[i]={...parts[pn]};});
+  const infoCols=[{h:'#',t:'n'},{h:'Part No',k:'pn',t:'txt'},{h:'Description',k:'desc',t:'txt'},{h:'Category',k:'cat',t:'txt'},{h:'Volume',k:'vol',t:'num'},{h:'Commodity',k:'com',t:'txt'},{h:'Country',k:'ctr',t:'txt'}];
+  const cols=infoCols;
+  let html=`<thead><tr>${cols.map(c=>`<th>${c.h}</th>`).join('')}</tr></thead><tbody>`;
+  bulkRows.forEach((row,i)=>{
+    html+=`<tr>`;
+    cols.forEach(c=>{
+      if(c.t==='n'){html+=`<td class="rnum">${i+1}</td>`;return;}
+      const val=row[c.k]||'';
+      html+=`<td><input type="${c.t==='num'?'number':'text'}" value="${val}" oninput="bEdit(${i},'${c.k}',this.value)"></td>`;
+    });
+    html+=`</tr>`;
+  });
+  document.getElementById('bgrid').innerHTML=html+'</tbody>';
+}
+function bEdit(i,k,v){if(!bulkRows[i])return;bulkRows[i][k]=v;}
+function addBR(){bulkRows.push({pn:'',desc:'',cat:'',vol:'',com:'',ctr:'',notes:''});renderBulk();}
+function saveBulkAll(){
+  if(!ce())return alert('No edit permission.');
+  let n=0;
+  bulkRows.forEach(row=>{
+    const pn=(row.pn||'').trim().toUpperCase();if(!pn||!row.desc)return;
+    const isNew=!parts[pn];parts[pn]={...row,pn,suppliers:[],savedAt:new Date().toISOString(),by:role};
+    addAudit(isNew?'PART_ADDED':'PART_UPDATED',pn);n++;
+  });
+  renderParts();renderCmp();updFilters();alert('✓ '+n+' parts saved.');
+}
+
+// ═══════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════
+function dlTpl(){
+  const hdr=['Part Number','Description','Category','Sub-Category','Volume','Commodity','Lead Country','Drawing No','Revision','Notes'];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([hdr,['PN-EXAMPLE','Example Part','Casting','Ferrous',1000,'Engine','India','DRW-001','Rev A','']]);
+  ws['!cols']=hdr.map(()=>({wch:16}));
+  XLSX.utils.book_append_sheet(wb,ws,'Master Data');
+  XLSX.writeFile(wb,'master_template.xlsx');
+}
+function hDrop(e,type){e.preventDefault();const dz=document.getElementById('dz-'+type);dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)procImp(f,type);}
+function hFile(inp,type){if(inp.files[0])procImp(inp.files[0],type);}
+function procImp(file,type){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      if(!rows.length)return alert('No data found.');
+      const errs=[],valid=[];
+      rows.forEach((r,i)=>{
+        const pn=(r['Part Number']||r['Part No']||'').toString().trim().toUpperCase();
+        if(!pn){errs.push(`Row ${i+2}: missing Part Number`);return;}
+        valid.push({...r,'Part Number':pn});
+      });
+      pendImp={valid,errs,type};
+      let html=`<div style="margin-bottom:11px;"><span style="color:var(--green);font-weight:700;font-family:var(--mono);">${valid.length} valid rows</span>${errs.length?` · <span style="color:var(--red);font-weight:700;">${errs.length} errors</span>`:''}</div>`;
+      if(errs.length)html+=`<div style="background:var(--r2);border:1px solid var(--red);border-radius:4px;padding:9px;margin-bottom:11px;">${errs.slice(0,5).map(e=>`<div style="color:var(--red);font-size:11px;">${e}</div>`).join('')}</div>`;
+      html+=`<div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><table style="font-size:11px;border-collapse:collapse;width:100%;"><thead><tr style="background:var(--bg3);"><th style="padding:5px 8px;border:1px solid var(--bd);">Part No</th><th style="padding:5px 8px;border:1px solid var(--bd);">Desc</th><th style="padding:5px 8px;border:1px solid var(--bd);">Cat</th></tr></thead><tbody>`;
+      valid.slice(0,20).forEach(r=>html+=`<tr><td style="padding:4px 8px;border:1px solid var(--bd);font-family:var(--mono);color:var(--green);">${r['Part Number']}</td><td style="padding:4px 8px;border:1px solid var(--bd);">${r['Description']||'—'}</td><td style="padding:4px 8px;border:1px solid var(--bd);color:var(--wh3);">${r['Category']||'—'}</td></tr>`);
+      if(valid.length>20)html+=`<tr><td colspan="3" style="color:var(--wh3);text-align:center;padding:8px;">… and ${valid.length-20} more</td></tr>`;
+      html+=`</tbody></table></div>`;
+      document.getElementById('conf-body').innerHTML=html;
+      document.getElementById('conf-title').textContent='CONFIRM IMPORT';
+      document.getElementById('mo-confirm').classList.add('open');
+    }catch(err){alert('Error: '+err.message);}
+  };reader.readAsArrayBuffer(file);
+}
+function confirmImp(){
+  if(!pendImp)return;
+  let n=0;
+  pendImp.valid.forEach(r=>{
+    const pn=r['Part Number'];const desc=r['Description']||'';
+    const isNew=!parts[pn];
+    parts[pn]={pn,desc,cat:r['Category']||'',sub:r['Sub-Category']||'',vol:r['Volume']||'',com:r['Commodity']||'',ctr:r['Lead Country']||'',dwg:r['Drawing No']||'',rev:r['Revision']||'',notes:r['Notes']||'',suppliers:[],cf:{},savedAt:new Date().toISOString(),by:role};
+    addAudit(isNew?'IMPORTED':'OVERWRITTEN',pn);n++;
+  });
+  document.getElementById('mo-confirm').classList.remove('open');pendImp=null;
+  renderParts();renderCmp();updFilters();
+}
+
+// ═══════════════════════════════════════
+// ISSUES
+// ═══════════════════════════════════════
+function updFilters(){
+  const sel=document.getElementById('if-pn');if(!sel)return;
+  sel.innerHTML='<option value="">All Parts</option>'+Object.keys(parts).map(pn=>`<option>${pn}</option>`).join('');
+  const tl=document.getElementById('tl-pn');if(tl)populateTLPartDrop();
+  const sc=document.getElementById('sc-pn');if(sc){sc.innerHTML='<option value="">— select part —</option>'+Object.keys(parts).map(pn=>`<option>${pn}</option>`).join('');}
+}
+function openIss(){if(!ce())return;document.getElementById('im-date').value=new Date().toISOString().slice(0,10);document.getElementById('mo-iss').classList.add('open');}
+function closeIss(){document.getElementById('mo-iss').classList.remove('open');}
+function saveIssue(){
+  if(!ce())return alert('No edit permission.');
+  const desc=document.getElementById('im-desc').value;if(!desc){alert('Description required.');return;}
+  const cs=document.getElementById('im-cs').value;
+  const iss={id:'ISS-'+String(issues.length+1).padStart(4,'0'),
+    pns:(document.getElementById('im-pns').value||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),
+    team:document.getElementById('im-team').value,cs,
+    os:document.getElementById('im-os').value||cs,
+    aff:(document.getElementById('im-aff').value||'').split(',').map(x=>x.trim()).filter(Boolean),
+    desc,root:document.getElementById('im-root').value,act:document.getElementById('im-act').value,
+    pri:document.getElementById('im-pri').value,sts:document.getElementById('im-sts').value,
+    date:document.getElementById('im-date').value,tgt:document.getElementById('im-tgt').value,
+    days:parseInt(document.getElementById('im-days').value)||0,
+    esc:document.getElementById('im-esc').value,at:new Date().toISOString(),by:role};
+  issues.push(iss);addAudit('ISSUE_LOGGED',`${iss.id} ${iss.cs}`);
+  closeIss();['im-pns','im-aff','im-desc','im-root','im-act','im-days'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('im-esc').value='';renderIssMet();renderIss();
+}
+function openBulkIss(){if(!ce())return;document.getElementById('bulk-iss-rows').innerHTML='';for(let i=0;i<5;i++)addBIRow();document.getElementById('mo-bulk-iss').classList.add('open');}
+function closeBulkIss(){document.getElementById('mo-bulk-iss').classList.remove('open');}
+function addBIRow(){
+  const tb=document.getElementById('bulk-iss-rows');const today=new Date().toISOString().slice(0,10);
+  const tr=document.createElement('tr');
+  const cell=(inner)=>`<td style="padding:2px;border:1px solid var(--bd);">${inner}</td>`;
+  const inp=(cls,ph,extra='')=>`<input placeholder="${ph}" class="${cls}" ${extra} style="background:var(--bg3);border:none;color:var(--wh);padding:5px;font-size:11px;width:100%;min-width:90px;outline:none;">`;
+  const sel=(cls,opts)=>`<select class="${cls}" style="background:var(--bg3);border:none;color:var(--wh);padding:5px;font-size:11px;outline:none;">${opts}</select>`;
+  const stOpts=STAGES.map(s=>`<option>${s}</option>`).join('');
+  const tmOpts='<option value="">—</option>'+TEAMS.map(t=>`<option>${t}</option>`).join('');
+  tr.innerHTML=cell(inp('bi-pns','PN-001,...','style="color:var(--green);font-family:var(--mono);"'))+cell(inp('bi-desc','Issue description'))+cell(sel('bi-cs',stOpts))+cell(sel('bi-os','<option value="">Same</option>'+stOpts))+cell(sel('bi-team',tmOpts))+cell(sel('bi-pri','<option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option>'))+cell(sel('bi-sts','<option>Open</option><option>In Progress</option><option>Escalated</option><option>Closed</option>'))+cell(inp('bi-date','','type="date" value="'+today+'"'))+`<td style="padding:2px;border:1px solid var(--bd);"><button onclick="this.closest('tr').remove()" style="background:var(--r2);border:1px solid var(--red);color:var(--red);padding:4px 7px;border-radius:2px;cursor:pointer;font-size:11px;">×</button></td>`;
+  tb.appendChild(tr);
+}
+function saveBulkIss(){
+  const rows=document.querySelectorAll('#bulk-iss-rows tr');let n=0;
+  rows.forEach(r=>{
+    const desc=r.querySelector('.bi-desc')?.value||'';if(!desc)return;
+    const cs=r.querySelector('.bi-cs')?.value||STAGES[0];
+    issues.push({id:'ISS-'+String(issues.length+1).padStart(4,'0'),pns:(r.querySelector('.bi-pns')?.value||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),team:r.querySelector('.bi-team')?.value||'',cs,os:r.querySelector('.bi-os')?.value||cs,aff:[],desc,root:'',act:'',pri:r.querySelector('.bi-pri')?.value||'Medium',sts:r.querySelector('.bi-sts')?.value||'Open',date:r.querySelector('.bi-date')?.value||'',tgt:'',days:0,esc:'',at:new Date().toISOString(),by:role});
+    addAudit('ISSUE_BULK','ISS-'+issues.length);n++;
+  });
+  closeBulkIss();renderIssMet();renderIss();if(n)alert('✓ '+n+' issues saved.');
+}
+function renderIssMet(){
+  const el=document.getElementById('iss-met');if(!el)return;
+  const op=issues.filter(i=>i.sts==='Open').length;
+  const esc=issues.filter(i=>i.sts==='Escalated'||i.pri==='Critical').length;
+  const ip=issues.filter(i=>i.sts==='In Progress').length;
+  const cl=issues.filter(i=>i.sts==='Closed').length;
+  const td=issues.reduce((s,i)=>s+i.days,0);
+  const cx=issues.filter(i=>i.os&&i.os!==i.cs).length;
+  el.innerHTML=`<div class="mc"><div class="ml">Total</div><div class="mv">${issues.length}</div></div><div class="mc mr"><div class="ml">Escalated/Critical</div><div class="mv">${esc}</div></div><div class="mc my"><div class="ml">Open</div><div class="mv">${op}</div></div><div class="mc mb"><div class="ml">In Progress</div><div class="mv">${ip}</div></div><div class="mc mg"><div class="ml">Closed</div><div class="mv">${cl}</div></div><div class="mc"><div class="ml">Days Delayed</div><div class="mv">${td}</div></div><div class="mc"><div class="ml">Cross-Stage</div><div class="mv">${cx}</div></div>`;
+}
+// ── TEAM COLOUR MAP ──
+const TEAM_COLORS={'Procurement':'#3d8ef8','Supply Chain':'#a855f7','Internal Quality':'#00ff87','SQE':'#ffd60a','External Quality':'#ff8c42','CM':'#ff3b5c','Finance':'#00c8c8','Engineering':'#e879f9'};
+function teamBadge(team){const c=TEAM_COLORS[team]||'#888';return`<span style="background:${c}18;border:1px solid ${c};color:${c};font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:2px;">${team}</span>`;}
+let hoIssIdx=null;
+const expandedCards=new Set();
+function toggleExpand(idx){if(expandedCards.has(idx))expandedCards.delete(idx);else expandedCards.add(idx);renderIss();}
+function openHandoff(idx){
+  if(!ce())return alert('No edit permission.');
+  hoIssIdx=idx;const iss=issues[idx];
+  document.getElementById('ho-iss-id').textContent=iss.id;
+  document.getElementById('ho-cur-team').textContent=iss.currentOwner||iss.team||'—';
+  document.getElementById('ho-note').value='';document.getElementById('ho-next-team').value='';
+  document.getElementById('ho-tgt').value='';document.getElementById('ho-pri').value='';
+  document.getElementById('ho-sts').value='In Progress';
+  document.getElementById('mo-handoff').classList.add('open');
+}
+function closeHandoff(){document.getElementById('mo-handoff').classList.remove('open');hoIssIdx=null;}
+function confirmHandoff(){
+  if(hoIssIdx===null)return;
+  const iss=issues[hoIssIdx];
+  const note=document.getElementById('ho-note').value.trim();
+  const nextTeam=document.getElementById('ho-next-team').value;
+  const tgt=document.getElementById('ho-tgt').value;
+  const newPri=document.getElementById('ho-pri').value;
+  const newSts=document.getElementById('ho-sts').value;
+  if(!note){alert('Please enter a resolution note.');return;}
+  if(!nextTeam){alert('Please select next team or Close Issue.');return;}
+  if(!iss.chain)iss.chain=[];
+  const fromTeam=iss.currentOwner||iss.team||'—';
+  iss.chain.push({from:fromTeam,to:nextTeam==='__close__'?null:nextTeam,note,tgt,ts:new Date().toLocaleString(),by:role});
+  if(nextTeam==='__close__'){iss.sts='Closed';iss.currentOwner=null;}
+  else{iss.currentOwner=nextTeam;iss.sts=newSts||'In Progress';if(tgt)iss.tgt=tgt;if(newPri)iss.pri=newPri;}
+  addAudit('ISSUE_HANDOFF',`${iss.id}: ${fromTeam} → ${nextTeam==='__close__'?'CLOSED':nextTeam}`);
+  closeHandoff();renderIssMet();renderIss();
+}
+function renderIss(){
+  const q=(document.getElementById('if-q')?.value||'').toLowerCase();
+  const fp=document.getElementById('if-pn')?.value||'';const ft=document.getElementById('if-team')?.value||'';
+  const fs=document.getElementById('if-stage')?.value||'';const fst=document.getElementById('if-sts')?.value||'';
+  const fpri=document.getElementById('if-pri')?.value||'';
+  const ff=document.getElementById('if-from')?.value||'';const ft2=document.getElementById('if-to')?.value||'';
+  let rows=issues.map((i,idx)=>({...i,_idx:idx})).filter(i=>{
+    if(q&&![i.desc,i.root,i.act,...i.pns].join(' ').toLowerCase().includes(q))return false;
+    if(fp&&!i.pns.includes(fp))return false;if(ft&&(i.currentOwner||i.team)!==ft)return false;
+    if(fs&&i.cs!==fs&&i.os!==fs)return false;if(fst&&i.sts!==fst)return false;if(fpri&&i.pri!==fpri)return false;
+    if(ff&&i.date&&i.date<ff)return false;if(ft2&&i.date&&i.date>ft2)return false;return true;
+  });
+  document.getElementById('iss-cnt').textContent=rows.length+' issues';
+  const el=document.getElementById('iss-list');
+  if(!rows.length){el.innerHTML=`<div style="text-align:center;padding:50px;color:var(--wh3);font-family:var(--mono);font-size:12px;"><div style="font-size:28px;margin-bottom:9px;">✓</div>NO ISSUES MATCH<br><button class="btn bg bsm" style="margin-top:12px;" onclick="openIss()">+ Log Issue</button></div>`;return;}
+  const stC={Quotation:'cQ',Feasibility:'cF',SDR:'cSD','Sample/Proto':'cSa',PPAP:'cP','FAI/Validation':'cFAI',Production:'cPr'};
+  const priC={Critical:'pcrit',High:'phigh',Medium:'pmed',Low:'plow'};
+  const stsCol={Open:'var(--yel)',Closed:'var(--green)','In Progress':'var(--blu)',Escalated:'var(--red)'};
+  const stChip=s=>`<span class="chip ${stC[s]||'cNS'}">${s}</span>`;
+  el.innerHTML=rows.map(iss=>{
+    const idx=iss._idx;
+    const isCross=iss.os&&iss.os!==iss.cs;
+    const isEsc=iss.sts==='Escalated'||iss.pri==='Critical';
+    const isClosed=iss.sts==='Closed';
+    const expanded=expandedCards.has(idx);
+    const owner=iss.currentOwner||iss.team||'—';
+    const ownerColor=TEAM_COLORS[owner]||'#888';
+    const chain=iss.chain||[];
+    const canHandoff=ce()&&!isClosed;
+    const chainHTML=chain.length?`<div class="hchain"><div class="hchain-title">Handoff Chain — ${chain.length} step${chain.length>1?'s':''}</div>${chain.map((step,si)=>{const isLast=si===chain.length-1;const fromC=TEAM_COLORS[step.from]||'#888';return`<div class="hstep"><div class="hstep-line"><div class="hstep-dot${step.to?isLast?' active':'':(isLast?' closed':'')}" style="border-color:${fromC};${!step.to&&isLast?'background:var(--g2);':''}"></div>${!isLast?'<div class="hstep-connector"></div>':''}</div><div class="hstep-body"><div class="hstep-hdr">${teamBadge(step.from)}<span style="font-size:10px;color:var(--wh3);">→</span>${step.to?teamBadge(step.to):'<span style="background:var(--g3);border:1px solid var(--g2);color:var(--green);font-size:10px;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-weight:700;">✓ CLOSED</span>'}<span class="hstep-time">${step.ts}${step.by?" · "+step.by.toUpperCase():""}</span></div><div class="hstep-note">${step.note}</div>${step.tgt?`<div class="hstep-arrow">⏱ Target: ${step.tgt}</div>`:''}</div></div>`;}).join('')}</div>`:'';
+    return`<div class="ic${isEsc?' iesc':''}${isClosed?' ic-closed':''}" id="icard-${idx}" style="${isClosed?'opacity:.75;':''}border-left:3px solid ${isClosed?'var(--g2)':ownerColor};">
+      <div class="ihdr">
+        <span class="iid">${iss.id}</span>
+        <span class="${priC[iss.pri]||'plow'}">${iss.pri}</span>
+        <span style="font-size:11px;color:${stsCol[iss.sts]||'var(--wh3)'};font-family:var(--mono);font-weight:700;">${iss.sts}</span>
+        ${isClosed?'<span style="background:var(--g3);border:1px solid var(--g2);color:var(--green);font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-weight:700;">✓ RESOLVED</span>':''}
+        <span style="font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 9px;border-radius:2px;background:${ownerColor}18;border:1px solid ${ownerColor};color:${ownerColor};">👤 ${owner}</span>
+        ${iss.esc&&!isClosed?`<span style="background:var(--r2);border:1px solid var(--red);color:var(--red);font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);">🚨 ${iss.esc.toUpperCase()}</span>`:''}
+        ${isCross?`<span style="background:#1a0a20;border:1px solid var(--pur);color:var(--pur);font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);">CROSS-STAGE</span>`:''}
+        ${chain.length?`<span style="background:#0a1a35;border:1px solid var(--blu);color:var(--blu);font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--mono);">🔗 ${chain.length} handoff${chain.length>1?'s':''}</span>`:''}
+        <div style="display:flex;gap:5px;align-items:center;margin-left:auto;">
+          <span style="font-size:10px;color:var(--wh3);font-family:var(--mono);">${iss.date||''}</span>
+          <button class="ic-expand-btn" onclick="toggleExpand(${idx})">${expanded?'▲ Hide':'▼ Details'}</button>
+        </div>
+      </div>
+      <div class="ibody">${iss.desc}</div>
+      <div class="iparts">${iss.pns.map(pn=>`<span class="ipn">${pn}</span>`).join('')}</div>
+      <div class="ic-body-expanded ${expanded?'open':''}">
+        ${iss.root?`<div style="font-size:11px;color:var(--wh3);margin:7px 0 4px;"><span style="color:var(--yel);font-family:var(--mono);font-size:10px;">ROOT CAUSE:</span> ${iss.root}</div>`:''}
+        ${iss.act?`<div style="font-size:11px;color:var(--wh3);margin-bottom:6px;"><span style="color:var(--green);font-family:var(--mono);font-size:10px;">INITIAL ACTION:</span> ${iss.act}</div>`:''}
+        <div class="istrow" style="margin-top:7px;">
+          <span style="font-size:10px;color:var(--wh3);font-family:var(--mono);">RAISED AT:</span>${stChip(iss.cs)}
+          ${isCross?`<span style="color:var(--wh3);font-size:10px;">←</span><span style="font-size:10px;color:var(--pur);font-family:var(--mono);">ORIGIN:</span>${stChip(iss.os)}`:''}
+          ${iss.aff?.length?`<span style="color:var(--wh3);font-size:10px;">→</span><span style="font-size:10px;color:var(--wh3);font-family:var(--mono);">AFFECTS:</span>${iss.aff.map(s=>stChip(s)).join('')}`:''}
+        </div>
+        <div class="imeta" style="margin-top:6px;">
+          ${iss.tgt?`<span>TARGET: ${iss.tgt}</span>`:''}
+          ${iss.days?`<span style="color:var(--red);">⚠ ${iss.days}d delayed</span>`:''}
+        </div>
+        ${chainHTML}
+        ${canHandoff?`<div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);"><button class="handoff-btn" onclick="openHandoff(${idx})">🔁 Resolve &amp; Hand Off</button></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function exportIssues(){
+  const hdr=['ID','Parts','Current Owner','Original Team','Stage','Origin Stage','Affected','Description','Root','Action','Priority','Status','Escalation','Date','Target','Days','Handoffs','Created'];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([hdr,...issues.map(i=>[i.id,i.pns.join(', '),i.currentOwner||i.team,i.team,i.cs,i.os,i.aff?.join(', '),i.desc,i.root,i.act,i.pri,i.sts,i.esc,i.date,i.tgt,i.days,(i.chain||[]).length,i.at])]),'Issue Log');
+  const chdr=['Issue ID','Step','From Team','To Team','Resolution Note','Target Date','Timestamp','By'];
+  const crows=[chdr];
+  issues.forEach(i=>(i.chain||[]).forEach((s,si)=>crows.push([i.id,si+1,s.from,s.to||'CLOSED',s.note,s.tgt,s.ts,s.by])));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(crows),'Handoff Chain');
+  XLSX.writeFile(wb,`issues_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ═══════════════════════════════════════
+// SHOULD COST
+// ═══════════════════════════════════════
+function toggleSCConv(){
+  const cur=document.getElementById('sc-cur').value;
+  document.getElementById('sc-conv-row').style.display=cur==='other'?'flex':'none';
+  calcSC();
+}
+function populateSCDrops(){
+  const pnSel=document.getElementById('sc-pn');if(!pnSel)return;
+  const cur=pnSel.value;
+  pnSel.innerHTML='<option value="">— select part —</option>'+Object.keys(parts).map(pn=>`<option>${pn}</option>`).join('');
+  if(cur)pnSel.value=cur;
+  // build commodity pills
+  buildComPills();
+}
+function onSCPNSelect(){
+  const pn=document.getElementById('sc-pn').value;
+  const p=parts[pn]||{};
+  document.getElementById('sc-desc').value=p.desc||'';
+  if(p.vol)document.getElementById('sc-vol').value=p.vol;
+  // populate supplier compare dropdown
+  const cmpSel=document.getElementById('sc-cmp-sup');
+  cmpSel.innerHTML='<option value="">— select supplier —</option>';
+  (p.suppliers||[]).forEach(s=>cmpSel.innerHTML+=`<option value="${s.id}">${s.name} ($${(s.data?.land||0).toFixed(2)} landed)</option>`);
+  // load saved model if exists
+  const m=scModels[pn];
+  if(m){
+    ['mat','proc','lab','scrap','oh','pkg','log','pm'].forEach(k=>{
+      const el=document.getElementById('sc_'+k);if(el&&m[k]!==undefined)el.value=m[k];
+      const en=document.getElementById('sc_'+k+'_n');if(en&&m[k+'_n'])en.value=m[k+'_n'];
+    });
+  }
+  calcSC();
+}
+function buildComPills(){
+  const el=document.getElementById('com-pills');if(!el)return;
+  el.innerHTML=COMMODITIES.map(c=>`<button class="cpill" onclick="presetCom('${c}',this)">${c}</button>`).join('');
+}
+// preset typical cost structure by commodity
+const COM_PRESETS={
+  'Casting':{scrap:8,oh:25,pkg:2},
+  'Machining':{scrap:3,oh:30,pkg:1},
+  'Stamping':{scrap:5,oh:20,pkg:1.5},
+  'Forging':{scrap:6,oh:28,pkg:2},
+  'Injection Moulding':{scrap:4,oh:22,pkg:1},
+  'Assembly':{scrap:1,oh:15,pkg:3},
+  'Electronics':{scrap:2,oh:18,pkg:4},
+  'Fabrication':{scrap:5,oh:25,pkg:2},
+};
+function presetCom(c,btn){
+  document.querySelectorAll('.cpill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  const p=COM_PRESETS[c]||{};
+  Object.entries(p).forEach(([k,v])=>{const el=document.getElementById('sc_'+k);if(el)el.value=v;});
+  calcSC();
+}
+function addSCField(){
+  const nm=prompt('Custom cost element name:');if(!nm)return;
+  const key='scx_'+nm.replace(/\s+/g,'_').toLowerCase();
+  scCustFields.push({nm,key});
+  const cont=document.getElementById('sc-custom-rows');
+  const row=document.createElement('div');row.className='sc-row';row.id='scrow_'+key;
+  row.innerHTML=`<span class="clabel">${nm}</span><input type="number" id="${key}" placeholder="0.00" step="0.01" oninput="calcSC()"><input type="number" id="${key}_u" readonly><span id="${key}_p" class="grc mn">—</span><div style="display:flex;gap:4px;"><input id="${key}_n" placeholder="Note" style="font-size:11px;"><button onclick="removeSCField('${key}')" style="background:var(--r2);border:1px solid var(--red);color:var(--red);padding:3px 6px;border-radius:2px;cursor:pointer;white-space:nowrap;font-size:10px;">×</button></div>`;
+  cont.appendChild(row);
+  // add result row
+  const res=document.getElementById('sc-custom-results');
+  const rrow=document.createElement('div');rrow.className='sc-total-row';rrow.id='scres_'+key;
+  rrow.innerHTML=`<span class="sc-total-label">+ ${nm.toUpperCase()}</span><span class="sc-total-val" id="srx_${key}">$ 0.00</span>`;
+  res.appendChild(rrow);
+}
+function removeSCField(key){
+  scCustFields=scCustFields.filter(f=>f.key!==key);
+  const r=document.getElementById('scrow_'+key);if(r)r.remove();
+  const res=document.getElementById('scres_'+key);if(res)res.remove();
+  calcSC();
+}
+function calcSC(){
+  const g=id=>parseFloat(document.getElementById(id)?.value)||0;
+  const cur=document.getElementById('sc-cur')?.value||'USD';
+  const conv=cur==='other'?g('sc-conv'):1;
+  const vol=g('sc-vol');
+  const mat=g('sc_mat')*conv;
+  const scrapV=mat*(g('sc_scrap')/100);
+  const proc=g('sc_proc')*conv;
+  const lab=g('sc_lab')*conv;
+  const base=mat+scrapV+proc+lab;
+  const ohV=base*(g('sc_oh')/100);
+  const pkg=g('sc_pkg')*conv;
+  const log=g('sc_log')*conv;
+  const sub=base+ohV+pkg+log;
+  const pmV=sub*(g('sc_pm')/100);
+  let custTotal=0;
+  scCustFields.forEach(f=>{const v=g(f.key)*conv;custTotal+=v;const uel=document.getElementById(f.key+'_u');if(uel)uel.value=v?v.toFixed(2):'';const spv=document.getElementById(f.key+'_p');if(spv)spv.textContent=sub?(v/sub*100).toFixed(1)+'%':'—';const rel=document.getElementById('srx_'+f.key);if(rel)rel.textContent='$ '+v.toFixed(2);});
+  const total=sub+pmV+custTotal;
+  const sp=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=total?(v/total*100).toFixed(1)+'%':'—';}
+  const su=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v?v.toFixed(2):'';}
+  const sr=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent='$ '+v.toFixed(2);}
+  su('sc_mat_u',mat);su('sc_scrap_u',scrapV);su('sc_proc_u',proc);su('sc_lab_u',lab);su('sc_oh_u',ohV);su('sc_pkg_u',pkg);su('sc_log_u',log);su('sc_pm_u',pmV);
+  sp('sc_mat_p',mat);sp('sc_scrap_p',scrapV);sp('sc_proc_p',proc);sp('sc_lab_p',lab);sp('sc_oh_p',ohV);sp('sc_pkg_p',pkg);sp('sc_log_p',log);sp('sc_pm_p',pmV);
+  sr('sr-mat',mat+scrapV);sr('sr-proc',proc);sr('sr-lab',lab);sr('sr-oh',ohV);sr('sr-pkg',pkg);sr('sr-log',log);sr('sr-pm',pmV);
+  document.getElementById('sr-total').textContent='$ '+total.toFixed(2);
+  document.getElementById('sr-inr').textContent=total?'₹ '+(total*inrRate).toFixed(0):'₹ —';
+  document.getElementById('sr-sc2').textContent=total?'$ '+total.toFixed(2):'—';
+  document.getElementById('sr-vol').textContent=vol?vol.toLocaleString()+' units':'—';
+  document.getElementById('sr-ann-sc').textContent=vol&&total?'$ '+(vol*total).toFixed(0):'—';
+  // compare with selected supplier
+  const supId=document.getElementById('sc-cmp-sup')?.value;
+  const pn=document.getElementById('sc-pn')?.value;
+  const p=parts[pn];
+  const sup=p?.suppliers?.find(s=>s.id===supId);
+  const quoted=sup?.data?.base?parseFloat(sup.data.base):0;
+  document.getElementById('sr-quoted').textContent=quoted?'$ '+quoted.toFixed(2):'—';
+  if(quoted&&total){
+    const gap=quoted-total;const gapPct=gap/quoted*100;
+    const gapEl=document.getElementById('sr-gap');gapEl.textContent='$ '+gap.toFixed(2);gapEl.className='sc-total-val '+(gap>0?'gap-pos':'gap-neg');
+    const gpEl=document.getElementById('sr-gappct');gpEl.textContent=gapPct.toFixed(1)+'%';gpEl.className='sc-total-val '+(gap>0?'gap-pos':'gap-neg');
+    const annSav=document.getElementById('sr-ann-sav');annSav.textContent=vol?'$ '+(vol*gap).toFixed(0):'—';annSav.className='sc-total-val '+(gap>0?'gap-pos':'gap-neg');
+  } else {
+    document.getElementById('sr-gap').textContent='—';document.getElementById('sr-gappct').textContent='—';document.getElementById('sr-ann-sav').textContent='—';
+  }
+}
+function saveSC(){
+  if(!ce())return alert('No edit permission.');
+  const pn=document.getElementById('sc-pn')?.value;if(!pn)return alert('Select a part first.');
+  const g=id=>parseFloat(document.getElementById(id)?.value)||0;
+  const total=parseFloat(document.getElementById('sr-total')?.textContent?.replace(/[^0-9.]/g,''))||0;
+  const quoted=parseFloat(document.getElementById('sr-quoted')?.textContent?.replace(/[^0-9.]/g,''))||0;
+  scModels[pn]={pn,mat:g('sc_mat'),scrap:g('sc_scrap'),proc:g('sc_proc'),lab:g('sc_lab'),oh:g('sc_oh'),pkg:g('sc_pkg'),log:g('sc_log'),pm:g('sc_pm'),total,quoted,gap:quoted-total,vol:g('sc-vol'),com:document.getElementById('sc-com')?.value,savedAt:new Date().toISOString()};
+  addAudit('SC_SAVED',`${pn} should cost: $${total.toFixed(2)}`);
+  renderSCTable();renderSCAna();
+  alert('✓ Should Cost model saved for '+pn);
+}
+function exportSC(){
+  const hdr=['Part No','Commodity','Material','Scrap%','Process','Labour','Overhead%','Packaging','Logistics','Margin%','Should Cost USD','Quoted USD','Gap USD','Annual Volume','Annual Saving'];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([hdr,...Object.values(scModels).map(m=>[m.pn,m.com,m.mat,m.scrap,m.proc,m.lab,m.oh,m.pkg,m.log,m.pm,m.total,m.quoted,m.gap,m.vol,m.vol?m.vol*m.gap:0])]),'Should Cost');
+  XLSX.writeFile(wb,`should_cost_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function renderSCTable(){
+  const tb=document.getElementById('sc-tb');const rows=Object.values(scModels);
+  document.getElementById('sc-cnt').textContent=rows.length+' models';
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--wh3);padding:20px;font-family:var(--mono);font-size:11px;">NO MODELS SAVED YET</td></tr>';return;}
+  tb.innerHTML=rows.map(m=>{
+    const gpos=m.gap>0;
+    return`<tr>
+      <td class="mn gc">${m.pn}</td><td class="grc">${m.com||'—'}</td>
+      <td class="mn" style="color:var(--green);">$${m.total.toFixed(2)}</td>
+      <td class="mn grc">${m.quoted?'$'+m.quoted.toFixed(2):'—'}</td>
+      <td class="mn ${gpos?'rc':'gc'}">${m.gap?'$'+m.gap.toFixed(2):'—'}</td>
+      <td class="mn ${gpos?'rc':'gc'}">${m.gap&&m.quoted?(m.gap/m.quoted*100).toFixed(1)+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════
+function dCh(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const G='#00ff87',R='#ff3b5c',BL='#3d8ef8',YL='#ffd60a',PU='#a855f7';
+function renderCmp(){
+  const rows=Object.values(parts);
+  const allSups=[...new Set(rows.flatMap(p=>(p.suppliers||[]).map(s=>s.name)))];
+  // metrics
+  const withQuotes=rows.filter(p=>(p.suppliers||[]).some(s=>s.data?.land));
+  document.getElementById('cmp-met').innerHTML=`
+    <div class="mc mg"><div class="ml">Total Parts</div><div class="mv">${rows.length}</div></div>
+    <div class="mc"><div class="ml">With Quotes</div><div class="mv">${withQuotes.length}</div></div>
+    <div class="mc"><div class="ml">Suppliers Tracked</div><div class="mv">${allSups.length}</div></div>
+    <div class="mc my"><div class="ml">Max Saving</div><div class="mv">$${withQuotes.reduce((s,p)=>{const ls=(p.suppliers||[]).map(x=>x.data?.land||0).filter(l=>l>0);return s+(ls.length>1?Math.max(...ls)-Math.min(...ls):0);},0).toFixed(0)}</div><div class="ms">best vs worst</div></div>
+  `;
+  // dynamic headers
+  const thead=document.getElementById('cmp-thead');
+  thead.innerHTML='<th>Part No</th><th>Description</th>'+allSups.map(s=>`<th>${s} Landed $</th>`).join('')+'<th>Best Supplier</th><th>Saving $</th>';
+  const tb=document.getElementById('cmp-tb');
+  if(!withQuotes.length){tb.innerHTML=`<tr><td colspan="${4+allSups.length}" style="text-align:center;color:var(--wh3);padding:24px;font-family:var(--mono);">NO PARTS WITH QUOTES YET</td></tr>`;return;}
+  tb.innerHTML=withQuotes.map(p=>{
+    const sups=p.suppliers||[];
+    const landed=sups.map(s=>({name:s.name,land:s.data?.land||0,color:s.color})).filter(s=>s.land>0);
+    const bestL=landed.length?Math.min(...landed.map(s=>s.land)):0;
+    const best=landed.find(s=>s.land===bestL);
+    const worst=landed.length?Math.max(...landed.map(s=>s.land)):0;
+    const saving=worst-bestL;
+    return`<tr>
+      <td class="mn gc">${p.pn}</td><td>${p.desc}</td>
+      ${allSups.map(sname=>{const s=landed.find(x=>x.name===sname);return`<td class="mn" style="color:${s?s.land===bestL?G:'var(--wh2)':'var(--wh3)'};">${s?'$'+s.land.toFixed(2):'—'}</td>`;}).join('')}
+      <td style="font-weight:700;font-family:var(--mono);color:${best?.color||'var(--wh3)'};">${best?.name||'—'}</td>
+      <td class="${saving>0?'dpos':'grc'}">$${saving.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+  // chart
+  dCh('ch-cmp');
+  if(withQuotes.length&&allSups.length){
+    const colors=[G,BL,PU,YL,R,'#ff8c42'];
+    charts['ch-cmp']=new Chart(document.getElementById('ch-cmp'),{type:'bar',
+      data:{labels:withQuotes.map(p=>p.pn),datasets:allSups.map((sname,i)=>({label:sname,data:withQuotes.map(p=>{const s=(p.suppliers||[]).find(x=>x.name===sname);return s?.data?.land||0;}),backgroundColor:colors[i%colors.length]+'77',borderColor:colors[i%colors.length],borderWidth:1}))},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#777',font:{size:10}}}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555'},grid:{color:'#141418'}}}}});
+  }
+  dCh('ch-sav');
+  const savData=withQuotes.map(p=>{const ls=(p.suppliers||[]).map(s=>s.data?.land||0).filter(l=>l>0);return ls.length>1?Math.max(...ls)-Math.min(...ls):0;});
+  charts['ch-sav']=new Chart(document.getElementById('ch-sav'),{type:'bar',data:{labels:withQuotes.map(p=>p.pn),datasets:[{label:'$ Saving',data:savData,backgroundColor:YL+'77',borderColor:YL,borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555'},grid:{color:'#141418'}}}}});
+}
+function renderIssAna(){
+  const el=document.getElementById('ai-met');if(!el)return;
+  const op=issues.filter(i=>i.sts!=='Closed').length,esc=issues.filter(i=>i.sts==='Escalated').length,td=issues.reduce((s,i)=>s+i.days,0),cx=issues.filter(i=>i.os!==i.cs).length;
+  el.innerHTML=`<div class="mc"><div class="ml">Total</div><div class="mv">${issues.length}</div></div><div class="mc my"><div class="ml">Open</div><div class="mv">${op}</div></div><div class="mc mr"><div class="ml">Escalated</div><div class="mv">${esc}</div></div><div class="mc"><div class="ml">Cross-Stage</div><div class="mv">${cx}</div></div><div class="mc"><div class="ml">Total Delay</div><div class="mv">${td}</div><div class="ms">days</div></div>`;
+  const stC=STAGES.map(s=>issues.filter(i=>i.cs===s||i.os===s).length);
+  const tmC=TEAMS.map(t=>issues.filter(i=>i.team===t).length);
+  const sts=['Open','In Progress','Escalated','Closed'];
+  const stV=sts.map(s=>issues.filter(i=>i.sts===s).length);
+  const delS=STAGES.map(s=>issues.filter(i=>i.cs===s).reduce((a,i)=>a+i.days,0));
+  dCh('ch-ist');charts['ch-ist']=new Chart(document.getElementById('ch-ist'),{type:'bar',data:{labels:STAGES,datasets:[{label:'Issues',data:stC,backgroundColor:R+'77',borderColor:R,borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555',stepSize:1},grid:{color:'#141418'}}}}});
+  dCh('ch-iteam');charts['ch-iteam']=new Chart(document.getElementById('ch-iteam'),{type:'bar',data:{labels:TEAMS,datasets:[{label:'Issues',data:tmC,backgroundColor:BL+'77',borderColor:BL,borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:8}}},y:{ticks:{color:'#555',stepSize:1},grid:{color:'#141418'}}}}});
+  dCh('ch-istat');charts['ch-istat']=new Chart(document.getElementById('ch-istat'),{type:'doughnut',data:{labels:sts,datasets:[{data:stV,backgroundColor:[YL+'aa',BL+'aa',R+'aa',G+'aa'],borderColor:'transparent'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{labels:{color:'#888',font:{size:11}}}}}});
+  dCh('ch-idel');charts['ch-idel']=new Chart(document.getElementById('ch-idel'),{type:'bar',data:{labels:STAGES,datasets:[{label:'Days',data:delS,backgroundColor:YL+'77',borderColor:YL,borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555'},grid:{color:'#141418'}}}}});
+}
+function renderSCAna(){
+  const models=Object.values(scModels);
+  const el=document.getElementById('sc-met');if(!el)return;
+  const totalSav=models.reduce((s,m)=>s+(m.vol&&m.gap?m.vol*m.gap:0),0);
+  el.innerHTML=`<div class="mc"><div class="ml">Models</div><div class="mv">${models.length}</div></div><div class="mc my"><div class="ml">Avg Gap%</div><div class="mv">${models.length?(models.reduce((s,m)=>s+(m.gap&&m.quoted?m.gap/m.quoted*100:0),0)/models.length).toFixed(1):0}%</div></div><div class="mc mg"><div class="ml">Total Annual Saving</div><div class="mv">$${totalSav.toFixed(0)}</div></div>`;
+  dCh('ch-sc');
+  if(models.length){
+    charts['ch-sc']=new Chart(document.getElementById('ch-sc'),{type:'bar',
+      data:{labels:models.map(m=>m.pn),datasets:[{label:'Should Cost',data:models.map(m=>m.total),backgroundColor:G+'77',borderColor:G,borderWidth:1},{label:'Best Quote',data:models.map(m=>m.quoted||0),backgroundColor:BL+'77',borderColor:BL,borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#777',font:{size:10}}}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555'},grid:{color:'#141418'}}}}});
+    dCh('ch-scann');
+    charts['ch-scann']=new Chart(document.getElementById('ch-scann'),{type:'bar',
+      data:{labels:models.map(m=>m.pn),datasets:[{label:'Annual Saving',data:models.map(m=>m.vol&&m.gap?m.vol*m.gap:0),backgroundColor:YL+'77',borderColor:YL,borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:9}}},y:{ticks:{color:'#555'},grid:{color:'#141418'}}}}});
+  }
+}
+
+// ═══════════════════════════════════════
+// INTEGRATION
+// ═══════════════════════════════════════
+function setIM(m){['local','od','sp'].forEach(x=>document.getElementById('im-'+x).classList.toggle('active',x===m));}
+function testConn(){
+  const el=document.getElementById('conn-st');const path=document.getElementById('int-path').value;
+  el.className='cst cidl';el.textContent='● TESTING...';
+  setTimeout(()=>{el.className=path?'cst cidl':'cst cerr';el.textContent=path?'● LOCAL MODE — download to verify':'● NO PATH SET';},1200);
+}
+function addAudit(action,detail){
+  auditLog.unshift({time:new Date().toLocaleTimeString(),action,detail,user:role});
+  if(auditLog.length>300)auditLog.pop();
+}
+function renderAudit(){
+  const el=document.getElementById('audit-list');if(!el)return;
+  if(!auditLog.length){el.innerHTML='<div style="color:var(--wh3);font-size:11px;font-family:var(--mono);">No actions yet.</div>';return;}
+  el.innerHTML=auditLog.slice(0,40).map(a=>`<div class="ae"><span class="at">${a.time}</span><span class="aa">${a.action}</span><span style="color:var(--wh3);">${a.detail}</span><span style="font-size:10px;color:var(--wh3);margin-left:auto;font-family:var(--mono);">${a.user.toUpperCase()}</span></div>`).join('');
+}
+function exportMasterLog(){
+  const prows=Object.values(parts);
+  const ph=['Part No','Desc','Cat','Sub-Cat','Volume','Commodity','Country','Drawing','Rev','Notes','Suppliers','Saved At'];
+  const pd=[ph,...prows.map(p=>[p.pn,p.desc,p.cat,p.sub,p.vol,p.com,p.ctr,p.dwg,p.rev,p.notes,(p.suppliers||[]).map(s=>s.name).join(', '),p.savedAt])];
+  const qh=['Part No','Supplier Name','Quote Ref','Currency','Conv','Base Price','Logistics%','WH%','Ins%','Tariff%','Other%','Landed USD','Landed INR'];
+  const qd=[qh,...prows.flatMap(p=>(p.suppliers||[]).map(s=>[p.pn,s.name,s.data?.ref,s.data?.cur,s.data?.conv,s.data?.base,s.data?.log,s.data?.wh,s.data?.ins,s.data?.tar,s.data?.oth,(s.data?.land||0).toFixed(2),((s.data?.land||0)*inrRate).toFixed(0)]))];
+  const tlh=['Part No','Stage','Field','Value'];const tlr=[tlh];
+  Object.entries(timelines).forEach(([pn,stgs])=>{Object.entries(stgs).forEach(([stg,vals])=>{if(typeof vals==='object')Object.entries(vals).forEach(([k,v])=>{if(v)tlr.push([pn,stg,k,v]);});else tlr.push([pn,'_',stg,vals]);});});
+  const ih=['ID','Parts','Team','Stage','Origin','Desc','Root','Action','Priority','Status','Date','Days','Created'];
+  const id=[ih,...issues.map(i=>[i.id,i.pns.join(', '),i.team,i.cs,i.os,i.desc,i.root,i.act,i.pri,i.sts,i.date,i.days,i.at])];
+  const sch=['Part No','Commodity','Material','Scrap%','Process','Labour','OH%','Pkg','Logistics','Margin%','Should Cost','Quoted','Gap','Volume','Ann Saving'];
+  const scd=[sch,...Object.values(scModels).map(m=>[m.pn,m.com,m.mat,m.scrap,m.proc,m.lab,m.oh,m.pkg,m.log,m.pm,m.total,m.quoted,m.gap,m.vol,m.vol&&m.gap?m.vol*m.gap:0])];
+  const ah=['Time','Action','Detail','User'];
+  const ad=[ah,...auditLog.map(a=>[a.time,a.action,a.detail,a.user])];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(pd),'Part Master');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(qd),'Quotations');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(tlr),'Timeline');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(id),'Issue Log');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(scd),'Should Cost');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ad),'Audit Trail');
+  XLSX.writeFile(wb,`npi_master_log_${new Date().toISOString().slice(0,10)}.xlsx`);
+  addAudit('MASTER_LOG_EXPORTED','6 sheets');renderAudit();
+}
+
+
+// ══════════════════════════════════════════════════════════
+// MODULE: ALERTS
+// ══════════════════════════════════════════════════════════
+let alertCfg={issWarn:5,issEsc:10,issWarn2:7,issEsc2:14,stuck:30,scGap:20,supIss:3};
+let alertFilter='all';
+function saveAlertCfg(){
+  alertCfg={
+    issWarn:+document.getElementById('cfg-iss-warn').value||5,
+    issEsc:+document.getElementById('cfg-iss-esc').value||10,
+    issWarn2:+document.getElementById('cfg-iss-warn2').value||7,
+    issEsc2:+document.getElementById('cfg-iss-esc2').value||14,
+    stuck:+document.getElementById('cfg-stuck').value||30,
+    scGap:+document.getElementById('cfg-sc-gap').value||20,
+    supIss:+document.getElementById('cfg-sup-iss').value||3,
+  };
+  renderAlerts();
+}
+function daysSince(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr);if(isNaN(d))return null;
+  return Math.floor((Date.now()-d)/86400000);
+}
+function buildAlerts(){
+  const alerts=[];
+  issues.forEach(iss=>{
+    if(iss.sts==='Closed')return;
+    const chain=iss.chain||[];
+    const lastAction=chain.length?chain[chain.length-1].ts:null;
+    const sinceLogged=daysSince(iss.date);
+    const sinceAction=lastAction?Math.floor((Date.now()-new Date(lastAction))/86400000):sinceLogged;
+    const owner=iss.currentOwner||iss.team||'—';
+    if(sinceAction!==null&&sinceAction>=alertCfg.issEsc)
+      alerts.push({level:'crit',icon:'🚨',title:`Issue ${iss.id} — No action for ${sinceAction} days`,detail:`Owner: ${owner} · Parts: ${(iss.pns||[]).join(', ')||'—'} · Stage: ${iss.cs}`,tags:['ESCALATE NOW','Issue Ageing'],age:sinceAction});
+    else if(sinceAction!==null&&sinceAction>=alertCfg.issWarn)
+      alerts.push({level:'warn',icon:'⚠️',title:`Issue ${iss.id} — Stalled for ${sinceAction} days`,detail:`Owner: ${owner} · Parts: ${(iss.pns||[]).join(', ')||'—'}`,tags:['WARN','Issue Ageing'],age:sinceAction});
+    if(sinceLogged!==null&&sinceLogged>=alertCfg.issEsc2)
+      alerts.push({level:'crit',icon:'🕐',title:`Issue ${iss.id} — Open ${sinceLogged} days since logged`,detail:`Original: ${iss.team||'—'} · Current: ${owner}`,tags:['LONG OPEN'],age:sinceLogged});
+    else if(sinceLogged!==null&&sinceLogged>=alertCfg.issWarn2&&sinceLogged<alertCfg.issEsc2)
+      alerts.push({level:'warn',icon:'🕐',title:`Issue ${iss.id} — Open ${sinceLogged} days since logged`,detail:`Original: ${iss.team||'—'} · Current: ${owner}`,tags:['AGEING'],age:sinceLogged});
+  });
+  Object.entries(timelines||{}).forEach(([pn,tl])=>{
+    const st=calcAutoStatus(tl);
+    if(st==='Not Started'||st==='Production')return;
+    const stFields=STAGE_FIELDS[st]||[];
+    let earliest=null;
+    stFields.forEach(f=>{const v=tl[st]?.[f.k];if(v){const d=new Date(v);if(!isNaN(d)&&(!earliest||d<earliest))earliest=d;}});
+    if(earliest){
+      const days=Math.floor((Date.now()-earliest)/86400000);
+      if(days>=alertCfg.stuck)
+        alerts.push({level:'warn',icon:'⏸',title:`${pn} stuck in ${st} for ${days} days`,detail:`Part: ${parts[pn]?.desc||'—'}`,tags:['STUCK','Timeline'],age:days});
+    }
+  });
+  Object.values(scModels||{}).forEach(m=>{
+    if(!m.quoted||!m.total)return;
+    const gap=(m.quoted-m.total)/m.total*100;
+    if(Math.abs(gap)>=alertCfg.scGap)
+      alerts.push({level:gap>0?'warn':'info',icon:'💰',title:`${m.pn} — ${gap>0?'Over':'Under'} should cost by ${Math.abs(gap).toFixed(1)}%`,detail:`Quoted: $${m.quoted.toFixed(2)} · Should Cost: $${m.total.toFixed(2)}`,tags:[gap>0?'OVERPRICE':'UNDERPRICE','Should Cost'],age:null});
+  });
+  const teamCounts={};
+  issues.filter(i=>i.sts!=='Closed').forEach(i=>{const o=i.currentOwner||i.team||'';if(o)teamCounts[o]=(teamCounts[o]||0)+1;});
+  Object.entries(teamCounts).forEach(([team,count])=>{
+    if(count>=alertCfg.supIss)
+      alerts.push({level:'warn',icon:'👥',title:`${team} has ${count} open issues`,detail:`${count} issues assigned — review and resolve`,tags:['TEAM LOAD'],age:null});
+  });
+  issues.filter(i=>i.pri==='Critical'&&i.sts!=='Closed').forEach(iss=>{
+    alerts.push({level:'crit',icon:'🔴',title:`CRITICAL: ${iss.id} — ${(iss.desc||'').slice(0,60)}`,detail:`Owner: ${iss.currentOwner||iss.team||'—'} · Parts: ${(iss.pns||[]).join(', ')}`,tags:['CRITICAL'],age:null});
+  });
+  alerts.sort((a,b)=>({crit:0,warn:1,info:2}[a.level]-{crit:0,warn:1,info:2}[b.level]));
+  return alerts;
+}
+function setAlertFilter(f,el){
+  alertFilter=f;
+  document.querySelectorAll('.af').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderAlerts();
+}
+function renderAlerts(){
+  const all=buildAlerts();
+  const filtered=alertFilter==='all'?all:all.filter(a=>a.level===alertFilter);
+  const crits=all.filter(a=>a.level==='crit');
+  const banner=document.getElementById('alert-banner');
+  const bmsg=document.getElementById('alert-banner-msg');
+  const bcnt=document.getElementById('alert-banner-count');
+  if(banner){
+    if(crits.length){banner.classList.add('show');bmsg.textContent=crits.length===1?crits[0].title:`${crits.length} critical alerts require immediate attention`;bcnt.textContent=`View All (${all.length})`;}
+    else banner.classList.remove('show');
+  }
+  const cntEl=document.getElementById('alert-total-count');if(cntEl)cntEl.textContent=filtered.length+' alerts';
+  const el=document.getElementById('alerts-list');if(!el)return;
+  if(!filtered.length){el.innerHTML=`<div style="text-align:center;padding:50px;color:var(--wh3);font-family:var(--mono);font-size:12px;"><div style="font-size:30px;margin-bottom:10px;">✓</div>NO ALERTS${alertFilter!=='all'?' IN THIS CATEGORY':''}</div>`;return;}
+  el.innerHTML=filtered.map(a=>`<div class="alert-card ${a.level}">
+    <div class="alert-icon">${a.icon}</div>
+    <div style="flex:1;">
+      <div class="alert-title">${a.title}</div>
+      <div class="alert-detail">${a.detail}</div>
+      <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;">
+        ${a.tags.map(t=>`<span class="alert-tag ${a.level}">${t}</span>`).join('')}
+        ${a.age!==null?`<span class="alert-tag info">${a.age} days</span>`:''}
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE: GANTT
+// ══════════════════════════════════════════════════════════
+const GANTT_COLORS={Feasibility:'#a855f7',SDR:'#ffd60a','Sample/Proto':'#ff8c42',PPAP:'#ff3b5c','FAI/Validation':'#3d8ef8',Production:'#00ff87'};
+const GANTT_ACT={Feasibility:'feasAppr',SDR:'sdrAppr','Sample/Proto':'sampDisp',PPAP:'ppapPO','FAI/Validation':'faiAct',Production:'prodReach'};
+const GANTT_FORE={Feasibility:'feasFore',SDR:'sdrFore','Sample/Proto':'sampRead',PPAP:'ppapRead','FAI/Validation':'faiPlan',Production:'prodRead'};
+
+function renderGantt(){
+  const wrap=document.getElementById('gantt-wrap');if(!wrap)return;
+  const fStage=document.getElementById('gantt-f-stage')?.value||'';
+  const fStatus=document.getElementById('gantt-f-status')?.value||'';
+  const q=(document.getElementById('gantt-search')?.value||'').toLowerCase();
+  const months=parseInt(document.getElementById('gantt-months')?.value||'6');
+  const pns=Object.keys(timelines||{}).filter(pn=>{
+    const tl=timelines[pn];const st=calcAutoStatus(tl);
+    if(fStatus&&st!==fStatus)return false;
+    if(q&&![pn,(parts[pn]?.desc||'')].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+  if(!pns.length){wrap.innerHTML='<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">No timeline data — add dates in Timeline page</div>';return;}
+  const today=new Date();
+  const start=new Date(today);start.setMonth(start.getMonth()-1);
+  const end=new Date(start);end.setMonth(end.getMonth()+months+1);
+  const totalDays=Math.ceil((end-start)/86400000);
+  const stages=fStage?[fStage]:['Feasibility','SDR','Sample/Proto','PPAP','FAI/Validation','Production'];
+  const pct=d=>Math.max(0,Math.min(100,((new Date(d)-start)/86400000/totalDays*100)));
+  const todayPct=pct(today);
+  const monthCols=[];let cur=new Date(start);cur.setDate(1);
+  while(cur<end){monthCols.push({label:cur.toLocaleDateString('en',{month:'short',year:'2-digit'}),date:new Date(cur)});cur.setMonth(cur.getMonth()+1);}
+  const stChipMap={Feasibility:'cF',SDR:'cSD','Sample/Proto':'cSa',PPAP:'cP','FAI/Validation':'cFAI',Production:'cPr','Not Started':'cNS'};
+  let html=`<table class="gantt-table"><thead><tr>
+    <th style="min-width:90px;">Part No</th><th style="min-width:120px;">Description</th><th style="min-width:80px;">Status</th>
+    <th style="min-width:${Math.max(400,monthCols.length*80)}px;position:relative;">
+      <div style="display:flex;position:relative;height:20px;">
+        ${monthCols.map(m=>`<div style="position:absolute;left:${pct(m.date)}%;font-size:9px;color:var(--wh3);font-family:var(--mono);white-space:nowrap;">${m.label}</div>`).join('')}
+      </div>
+    </th>
+  </tr></thead><tbody>`;
+  pns.forEach(pn=>{
+    const tl=timelines[pn]||{};const st=calcAutoStatus(tl);const p=parts[pn]||{};
+    html+=`<tr><td class="gantt-label"><div class="gantt-pn">${pn}</div></td>
+      <td class="gantt-label"><div class="gantt-desc" title="${p.desc||''}">${p.desc||'—'}</div></td>
+      <td class="gantt-label"><span class="chip ${stChipMap[st]||'cNS'}" style="font-size:9px;">${st}</span></td>
+      <td class="gantt-cell"><div style="position:relative;height:100%;width:100%;">
+        <div class="gantt-today" style="left:${todayPct}%;"></div>
+        ${stages.map(stg=>{
+          const color=GANTT_COLORS[stg]||'#888';
+          const aDate=tl[stg]?.[GANTT_ACT[stg]];const fDate=tl[stg]?.[GANTT_FORE[stg]];
+          const prevStg=stages[stages.indexOf(stg)-1];
+          let bars='';
+          if(fDate&&new Date(fDate)>=start&&new Date(fDate)<=end){
+            const fp=pct(fDate);const prevFD=prevStg?tl[prevStg]?.[GANTT_FORE[prevStg]]:null;
+            const sp=prevFD?pct(prevFD):Math.max(0,fp-8);
+            bars+=`<div class="gantt-bar" style="left:${sp}%;width:${Math.max(1,fp-sp)}%;background:${color}33;border:1px dashed ${color};top:12px;height:10px;"
+              onmouseenter="showGanttTip(event,'${pn}','${stg}','Forecast','${fDate}')"
+              onmouseleave="hideGanttTip()"></div>`;
+          }
+          if(aDate&&new Date(aDate)>=start&&new Date(aDate)<=end){
+            const ap=pct(aDate);const prevAD=prevStg?tl[prevStg]?.[GANTT_ACT[prevStg]]:null;
+            const sp=prevAD?pct(prevAD):Math.max(0,ap-6);
+            const late=fDate&&new Date(aDate)>new Date(fDate);
+            bars+=`<div class="gantt-bar" style="left:${sp}%;width:${Math.max(1,ap-sp)}%;background:${late?'var(--red)':color};top:6px;height:10px;"
+              onmouseenter="showGanttTip(event,'${pn}','${stg}','Actual','${aDate}'${late?',true':''})"
+              onmouseleave="hideGanttTip()"></div>`;
+          }
+          return bars;
+        }).join('')}
+      </div></td></tr>`;
+  });
+  wrap.innerHTML=html+'</tbody></table>';
+}
+function showGanttTip(e,pn,stage,type,date,late){
+  const tip=document.getElementById('gantt-tip');if(!tip)return;
+  tip.innerHTML=`<strong style="color:${late?'var(--red)':'var(--green)'};font-family:var(--mono);">${pn}</strong><br><span style="color:var(--wh3);">Stage: ${stage}</span><br><span style="color:var(--wh3);">${type}: ${date}</span>${late?'<br><span style="color:var(--red);font-weight:700;">⚠ LATE vs forecast</span>':''}`;
+  tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY-10)+'px';tip.classList.add('show');
+}
+function hideGanttTip(){document.getElementById('gantt-tip')?.classList.remove('show');}
+
+// ══════════════════════════════════════════════════════════
+// MODULE: GATE REVIEW
+// ══════════════════════════════════════════════════════════
+const GATE_CHECKS={
+  Feasibility:[{k:'feasAppr',l:'Feasibility Approved',src:'Feasibility'},{k:'rfi',l:'RFI Completed',src:'Feasibility'},{k:'sdrReq',l:'SDR Requirement Confirmed',src:'Feasibility'},{special:'no_crit',l:'No critical open issues',stage:'Feasibility'}],
+  SDR:[{k:'sdrAppr',l:'SDR Approved',src:'SDR'},{special:'no_iss',l:'No open issues blocking SDR',stage:'SDR'}],
+  'Sample/Proto':[{k:'sampDisp',l:'Sample Dispatched',src:'Sample/Proto'},{k:'sampReach',l:'Sample Reached Customer',src:'Sample/Proto'},{special:'no_iss',l:'No open quality issues',stage:'Sample/Proto'}],
+  PPAP:[{k:'ppapPO',l:'PPAP PO Sent',src:'PPAP'},{k:'ppapDocA',l:'PPAP Documents Approved',src:'PPAP'},{k:'ppapReach',l:'PPAP Samples Reached',src:'PPAP'},{special:'no_iss',l:'No open PPAP issues',stage:'PPAP'}],
+  'FAI/Validation':[{k:'faiAct',l:'FAI Completed',src:'FAI/Validation'},{special:'fai_ok',l:'FAI Status — Approved',src:'FAI/Validation'},{special:'no_iss',l:'No open validation issues',stage:'FAI/Validation'}],
+  Production:[{k:'prodPO',l:'Production PO Issued',src:'FAI/Validation'},{k:'prodLot',l:'Production Lot Completed',src:'Production'},{k:'prodReach',l:'Prod Lot Reached Customer',src:'Production'},{special:'no_iss',l:'No open production issues',stage:'Production'}],
+};
+function evalCheck(c,pn,tl){
+  if(c.special==='no_crit'){const h=issues.some(i=>(i.pns||[]).includes(pn)&&i.sts!=='Closed'&&i.pri==='Critical');return{pass:!h,note:h?'Critical issues open':'Clear'};}
+  if(c.special==='no_iss'){const h=issues.some(i=>(i.pns||[]).includes(pn)&&i.sts!=='Closed'&&(i.cs===c.stage||i.os===c.stage));return{pass:!h,note:h?'Open issues at this stage':'Clear'};}
+  if(c.special==='fai_ok'){const v=(tl['FAI/Validation']||{}).faiSt||'';return{pass:v.toLowerCase().includes('approv'),note:v||'Not set'};}
+  const v=tl[c.src]?.[c.k];return{pass:!!v,note:v||'Not completed'};
+}
+function renderGate(){
+  const fStage=document.getElementById('gate-f-stage')?.value||'';
+  const fTraffic=document.getElementById('gate-f-traffic')?.value||'';
+  const el=document.getElementById('gate-list');if(!el)return;
+  const stages=fStage?[fStage]:['Feasibility','SDR','Sample/Proto','PPAP','FAI/Validation','Production'];
+  const pns=Object.keys(parts);
+  let green=0,amber=0,red=0;const cards=[];
+  if(!pns.length){el.innerHTML='<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">No parts yet</div>';return;}
+  const stChipMap={Feasibility:'cF',SDR:'cSD','Sample/Proto':'cSa',PPAP:'cP','FAI/Validation':'cFAI',Production:'cPr'};
+  pns.forEach(pn=>{
+    const tl=timelines[pn]||{};const p=parts[pn]||{};
+    stages.forEach(stg=>{
+      const checks=(GATE_CHECKS[stg]||[]).map(c=>({...c,...evalCheck(c,pn,tl)}));
+      const passed=checks.filter(c=>c.pass).length;const total=checks.length;
+      const pct=total?Math.round(passed/total*100):0;
+      const traffic=pct===100?'green':pct>=50?'amber':'red';
+      if(fTraffic&&traffic!==fTraffic)return;
+      if(traffic==='green')green++;else if(traffic==='amber')amber++;else red++;
+      cards.push(`<div class="gate-card">
+        <div class="gate-hdr">
+          <span class="gate-pn">${pn}</span>
+          <span style="font-size:11px;color:var(--wh3);">${p.desc||'—'}</span>
+          <span class="chip ${stChipMap[stg]||'cNS'}" style="font-size:10px;">${stg}</span>
+          <span class="gate-score gate-${traffic}">${traffic==='green'?'🟢 READY':traffic==='amber'?'🟡 PARTIAL':'🔴 NOT READY'} ${pct}%</span>
+          <span style="font-size:10px;color:var(--wh3);font-family:var(--mono);margin-left:auto;">${passed}/${total} checks</span>
+        </div>
+        <div class="gate-checks">
+          ${checks.map(c=>`<div class="gate-check ${c.pass?'pass':'fail'}">
+            <div class="gate-dot" style="background:${c.pass?'var(--green)':'var(--red)'};margin-top:3px;"></div>
+            <div><div style="font-size:11px;font-weight:600;">${c.l}</div>
+            <div style="font-size:10px;color:var(--wh3);font-family:var(--mono);">${c.note}</div></div>
+          </div>`).join('')}
+        </div>
+        <div class="gate-progress"><div class="gate-progress-fill" style="width:${pct}%;background:${traffic==='green'?'var(--green)':traffic==='amber'?'var(--yel)':'var(--red)'};"></div></div>
+      </div>`);
+    });
+  });
+  const met=document.getElementById('gate-met');
+  if(met)met.innerHTML=`<div class="mc mg"><div class="ml">🟢 Ready</div><div class="mv">${green}</div></div><div class="mc my"><div class="ml">🟡 Partial</div><div class="mv">${amber}</div></div><div class="mc mr"><div class="ml">🔴 Not Ready</div><div class="mv">${red}</div></div><div class="mc"><div class="ml">Total Gates</div><div class="mv">${green+amber+red}</div></div>`;
+  el.innerHTML=cards.length?cards.join(''):'<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">No gates match your filters</div>';
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE: SCORECARD
+// ══════════════════════════════════════════════════════════
+function calcSupScore(supName){
+  const allParts=Object.values(parts);
+  const priceData=allParts.filter(p=>(p.suppliers||[]).find(x=>x.name===supName&&x.data?.land>0));
+  let priceScore=50;
+  if(priceData.length){
+    const sc=priceData.map(p=>{
+      const ts=(p.suppliers||[]).find(x=>x.name===supName);
+      const all=(p.suppliers||[]).map(s=>s.data?.land||0).filter(l=>l>0);
+      if(all.length<2)return 70;
+      const best=Math.min(...all),worst=Math.max(...all);
+      if(worst===best)return 80;
+      return Math.round(100-((ts?.data?.land||worst)-best)/(worst-best)*100);
+    });
+    priceScore=Math.round(sc.reduce((a,b)=>a+b,0)/sc.length);
+  }
+  const openI=issues.filter(i=>(i.currentOwner===supName||i.team===supName)&&i.sts!=='Closed').length;
+  const totI=issues.filter(i=>i.currentOwner===supName||i.team===supName).length;
+  const qualScore=Math.max(0,100-openI*12-totI*3);
+  const delay=issues.filter(i=>i.currentOwner===supName||i.team===supName).reduce((s,i)=>s+(i.days||0),0);
+  const delScore=Math.max(0,100-delay*4);
+  let respScore=70;
+  const rd=allParts.flatMap(p=>(p.suppliers||[]).filter(s=>s.name===supName&&s.data?.rfq&&s.data?.qr));
+  if(rd.length){const avg=rd.reduce((s,s2)=>s+Math.abs(new Date(s2.data.qr)-new Date(s2.data.rfq))/86400000,0)/rd.length;respScore=Math.max(0,Math.round(100-avg*3));}
+  const total=Math.round(priceScore*.30+qualScore*.25+delScore*.25+respScore*.20);
+  const grade=total>=85?'A':total>=70?'B':total>=55?'C':'D';
+  return{name:supName,price:priceScore,quality:qualScore,delivery:delScore,responsiveness:respScore,total,grade};
+}
+function renderScorecard(){
+  const allSups=[...new Set(Object.values(parts).flatMap(p=>(p.suppliers||[]).map(s=>s.name)))];
+  const el=document.getElementById('scorecard-list');if(!el)return;
+  if(!allSups.length){el.innerHTML='<div style="color:var(--wh3);font-size:12px;font-family:var(--mono);text-align:center;padding:40px;">No suppliers yet — add in Master Data</div>';return;}
+  const scores=allSups.map(calcSupScore).sort((a,b)=>b.total-a.total);
+  const met=document.getElementById('sc-met-top');
+  if(met){const avg=Math.round(scores.reduce((s,x)=>s+x.total,0)/scores.length);met.innerHTML=`<div class="mc mg"><div class="ml">Top Supplier</div><div class="mv" style="font-size:15px;">${scores[0]?.name||'—'}</div><div class="ms">Score: ${scores[0]?.total||0}</div></div><div class="mc"><div class="ml">Avg Score</div><div class="mv">${avg}</div><div class="ms">all suppliers</div></div><div class="mc mr"><div class="ml">Grade D</div><div class="mv">${scores.filter(s=>s.grade==='D').length}</div><div class="ms">need attention</div></div>`;}
+  const bc=v=>v>=80?'var(--green)':v>=60?'var(--blu)':v>=40?'var(--yel)':'var(--red)';
+  el.innerHTML=scores.map(s=>`<div class="sup-score-card">
+    <div class="sup-score-hdr">
+      <span style="font-size:14px;font-weight:700;color:var(--wh);">${s.name}</span>
+      <span class="score-badge sc-${s.grade}">Grade ${s.grade}</span>
+      <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${bc(s.total)};margin-left:auto;">${s.total}<span style="font-size:13px;color:var(--wh3);">/100</span></span>
+    </div>
+    ${[['Price Competitiveness',s.price,30],['Quality (Issues)',s.quality,25],['Delivery (Delays)',s.delivery,25],['Responsiveness',s.responsiveness,20]].map(([l,v,w])=>`<div class="score-bar-row">
+      <span class="score-bar-label">${l} <span style="font-size:9px;color:var(--wh3);">(${w}%)</span></span>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${v}%;background:${bc(v)};"></div></div>
+      <span class="score-val" style="color:${bc(v)};">${v}</span>
+    </div>`).join('')}
+  </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODULE: DOCS
+// ══════════════════════════════════════════════════════════
+const DOCS_SECTIONS=[
+  {id:'overview',title:'Overview',icon:'🏠'},{id:'masterdata',title:'Master Data',icon:'📋'},
+  {id:'timeline',title:'Timeline',icon:'📅'},{id:'gantt',title:'Gantt View',icon:'📊'},
+  {id:'gate',title:'Gate Review',icon:'🚦'},{id:'issues',title:'Issue Log',icon:'🐛'},
+  {id:'scorecard',title:'Supplier Scorecard',icon:'🏆'},{id:'shouldcost',title:'Should Cost',icon:'💰'},
+  {id:'analytics',title:'Analytics',icon:'📈'},{id:'alerts',title:'Alerts',icon:'🔔'},
+  {id:'integration',title:'Integration',icon:'🔗'},{id:'roadmap',title:'Roadmap',icon:'🚀'},
+];
+const DOCS_CONTENT={
+  overview:`<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">NPI Procurement Hub v5</h2><p style="color:var(--wh3);margin-bottom:16px;line-height:1.7;">A single-file, offline-first NPI management tool. No backend needed — all data lives in your session and exports to Excel. Runs on SharePoint, OneDrive, or any static host.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:8px;">QUICK START</div>
+    <ol style="color:var(--wh3);font-size:12px;line-height:2.2;padding-left:18px;">
+      <li>Go to <strong style="color:var(--wh);">Master Data</strong> → add parts + suppliers with quotes</li>
+      <li>Go to <strong style="color:var(--wh);">Timeline</strong> → select part, pick stage, enter dates</li>
+      <li>Go to <strong style="color:var(--wh);">Issue Log</strong> → log issues, hand off between teams</li>
+      <li>Go to <strong style="color:var(--wh);">Should Cost</strong> → build bottom-up cost models</li>
+      <li>Go to <strong style="color:var(--wh);">Gate Review</strong> → check stage readiness per part</li>
+      <li>Go to <strong style="color:var(--wh);">Integration</strong> → export master log (6 Excel sheets)</li>
+    </ol></div>`,
+  masterdata:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Master Data</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Foundation of everything. Parts, descriptions, custom fields, and multi-supplier quotations with full landed cost breakdown.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:7px;">3 INPUT MODES</div>
+    <div style="font-size:12px;color:var(--wh3);line-height:2;"><strong style="color:var(--wh);">Single Entry</strong> — Full detail per part, multiple suppliers<br><strong style="color:var(--wh);">Bulk Grid</strong> — Spreadsheet-style, all parts as rows<br><strong style="color:var(--wh);">Excel Import</strong> — Download template, fill offline, upload</div></div>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;"><div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:7px;">LANDED COST</div>
+    <div style="font-size:12px;color:var(--wh3);line-height:1.9;">Base Price × Conv → USD + Logistics% + WH% + Insurance% + Tariff% + Other% = <strong style="color:var(--green);">Landed Cost (USD)</strong><br>Currency: USD default. Non-USD shows inline conversion box + INR equivalent.</div></div>`,
+  timeline:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Timeline</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Track actual and forecast dates per stage. Auto-status computed from most advanced stage with data.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;"><div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:7px;">STAGES</div>
+    <div style="font-size:12px;color:var(--wh3);line-height:2;">Feasibility → SDR → Sample/Proto → PPAP → FAI/Validation → Production<br>Quotation dates live in Master Data supplier quotes.</div></div>`,
+  gantt:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Gantt View</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Visual timeline. Solid bars = actual, dashed = forecast, red bar = late actual, red line = today.</p>`,
+  gate:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Gate Review</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Stage-gate readiness per part. Each stage has a checklist. Traffic light shows overall readiness: 🟢 100% · 🟡 50–99% · 🔴 &lt;50%.</p>`,
+  issues:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Issue Log</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Full issue tracking with cross-stage tagging, multi-part linking, and team relay handoff workflow.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;"><div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:7px;">HANDOFF WORKFLOW</div>
+    <div style="font-size:12px;color:var(--wh3);line-height:2;">Log → Assigned to team → Click ▼ Details → <strong style="color:var(--green);">Resolve &amp; Hand Off</strong> → Enter note → Select next team → Repeat until closed. Full chain visible inline.</div></div>`,
+  scorecard:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Supplier Scorecard</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Auto-scored 0–100 per supplier. Grade A–D.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;font-size:12px;color:var(--wh3);line-height:2;">Price Competitiveness (30%) · Quality — issues (25%) · Delivery — delays (25%) · Responsiveness — quote TAT (20%)</div>`,
+  shouldcost:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Should Cost</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Bottom-up cost build per part. Compare with supplier quotes to identify negotiation gap.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;font-size:12px;color:var(--wh3);line-height:2;">Material → Scrap → Process → Labour → Overhead → Packaging → Logistics → Margin → <strong style="color:var(--green);">Should Cost</strong><br>Commodity presets auto-fill typical values. Add custom cost elements with + button.</div>`,
+  analytics:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Analytics</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Three tabs: Supplier Comparison, Issue Analysis, Should Cost. Supplier comparison auto-highlights lowest landed cost and compares against should cost model.</div>`,
+  alerts:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Alerts</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">System-wide alert engine. Critical alerts show in red banner on every page. Full list here.</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:14px;font-size:12px;color:var(--wh3);line-height:2;">🚨 Critical — no action on issue X days, critical issues open<br>⚠️ Warning — ageing issues, stuck parts, team overload, price gap<br>ℹ️ Info — should cost under-priced<br>All thresholds configurable in settings panel.</div>`,
+  integration:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">Integration</h2><p style="color:var(--wh3);margin-bottom:14px;line-height:1.7;">Export master log (6 sheets: Part Master · Quotations · Timeline · Issue Log · Should Cost · Audit Trail). Safe merge write-back to existing Excel.</p>`,
+  roadmap:`<h2 style="font-size:16px;font-weight:700;margin-bottom:8px;">🚀 Roadmap</h2>
+    ${[{ver:'v6',status:'planned',items:[['Multi-Project Support','Each project has its own parts, suppliers, issues. Master analytics aggregates across all. Shared parts library option.'],['Email/Teams Handoff Notification','When an issue is handed off, auto-generate a pre-filled message for the next team via mailto or Teams deep link.'],['Issue Ageing Heatmap','Visual heatmap — which team holds issues longest. Days vs team vs stage grid.']]},{ver:'v7',status:'planned',items:[['Supplier Quote History','Every quote update keeps previous version. Show price change over time for negotiation.'],['Part Risk Score','Auto risk score: open issues + stage delay + SC gap + supplier performance. Surface highest-risk parts.'],['Drawing/Document Links','Link drawing numbers to SharePoint URLs. Click DRW → opens drawing.']]},{ver:'v8',status:'future',items:[['SharePoint Live Sync','Wire Integration to Microsoft Graph API. Saving writes directly to SharePoint List in real time.'],['Commodity Benchmarking','Flag when should cost material input is above market index rate (steel, copper, aluminium).'],['PDF Gate Review Report','One-click PDF of Gate Review page for management presentations.']]},{ver:'v9',status:'future',items:[['AI Should Cost Assist','Input part category, weight, material — AI suggests typical cost breakdown ranges.'],['Supplier Portal','Read-only shareable link per supplier showing only their own quote data and open issues.'],['BOM Integration','Import Bill of Materials. Roll up should cost across the full BOM.']]}].map(({ver,status,items})=>`
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--green);">${ver}</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-weight:700;${status==='planned'?'background:var(--g3);color:var(--green);border:1px solid var(--g2)':'background:var(--bg4);color:var(--wh3);border:1px solid var(--bd2)'};">${status.toUpperCase()}</span>
+        </div>
+        ${items.map(([t,d])=>`<div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;"><span style="color:var(--green);font-size:16px;flex-shrink:0;">◈</span><div><div style="font-size:12px;font-weight:700;color:var(--wh);margin-bottom:3px;">${t}</div><div style="font-size:11px;color:var(--wh3);line-height:1.6;">${d}</div></div></div>`).join('')}
+      </div>`).join('')}
+    <div style="background:var(--g3);border:1px solid var(--g2);border-radius:6px;padding:14px;margin-top:8px;font-size:12px;color:var(--wh3);">💡 <strong style="color:var(--green);">Have an idea?</strong> Share your feature requests — every version is built from real workflow needs.</div>`,
+};
+function renderDocs(){
+  const nav=document.getElementById('docs-nav');const body=document.getElementById('docs-content');
+  if(!nav||!body)return;
+  nav.innerHTML=DOCS_SECTIONS.map(s=>`<div class="docs-nav-item" id="dnav-${s.id}" onclick="showDocsSection('${s.id}')">${s.icon} ${s.title}</div>`).join('');
+  showDocsSection('overview');
+}
+function showDocsSection(id){
+  document.querySelectorAll('.docs-nav-item').forEach(el=>{el.style.color='var(--wh3)';el.style.background='none';el.style.borderLeft='none';});
+  const a=document.getElementById('dnav-'+id);
+  if(a){a.style.color='var(--green)';a.style.background='var(--g3)';a.style.borderLeft='2px solid var(--green)';}
+  const body=document.getElementById('docs-content');if(!body)return;
+  body.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:22px;line-height:1.7;">${DOCS_CONTENT[id]||'<div style="color:var(--wh3);">Section coming soon.</div>'}</div>`;
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function init(){
+  // Build stage pickers
+  buildStagePicker(document.getElementById('tl-stage-picker'),document.getElementById('tl-stage-fields'),'tl','tl');
+  buildComPills();
+  renderParts();renderBulk();renderIssMet();renderIss();renderCmp();renderSCAna();
+  renderAlerts();renderGantt();renderGate();renderScorecard();renderDocs();
+  document.getElementById('im-date').value=new Date().toISOString().slice(0,10);
+  addAudit('SESSION_START','NPI Hub v5 — 11 pages ready');
+}
+init();
+</script>
+</body>
+</html>
