@@ -402,6 +402,12 @@ function initTaglineRotator() {
 
 /* --- 9. Dynamic Scroll-Induced Sourcing Chaos Engine --- */
 function initSourcingChaos() {
+    // 1. Abort completely on mobile/tablets to preserve battery and GPU/CPU rendering cycles
+    if (window.innerWidth < 768) {
+        console.log('[Blueprint] Mobile viewport detected. Halting SVG animation engine to maximize performance.');
+        return;
+    }
+
     const paths = document.querySelectorAll('.sourcing-path');
     const nodes = document.querySelectorAll('.sourcing-node');
     
@@ -412,10 +418,6 @@ function initSourcingChaos() {
     
     // Select the new CSS-based dot grid element
     const gridDots = document.querySelector('.blueprint-grid-dots');
-    
-    // Query both groups for synchronized hue rotation
-    const pathsGroup = document.querySelector('.sourcing-paths-group');
-    const nodesGroup = document.querySelector('.sourcing-nodes-group');
     
     let scrollY = window.scrollY;
     let smoothScrollY = window.scrollY;
@@ -502,27 +504,8 @@ function initSourcingChaos() {
             path3.style.transform = `translate3d(${drift3X}px, ${drift3Y}px, 0px) rotate(${rot3}deg)`;
         }
 
-        // Path Glows in Dark Theme
-        paths.forEach((path, idx) => {
-            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-            if (theme === 'dark') {
-                const glowSize = 4 + (scrollWarp * 0.15);
-                path.style.filter = `drop-shadow(0 0 ${glowSize}px var(--glow-color-${idx + 1}))`;
-            } else {
-                path.style.filter = ''; 
-            }
-        });
-
-        // Dark Mode Chaos with Colors: rotate hues smoothly based on scroll position
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        if (theme === 'dark' && smoothScrollY > 10) {
-            const hueShift = (smoothScrollY * 0.16) % 360;
-            if (pathsGroup) pathsGroup.style.filter = `hue-rotate(${hueShift}deg)`;
-            if (nodesGroup) nodesGroup.style.filter = `hue-rotate(${hueShift}deg)`;
-        } else {
-            if (pathsGroup) pathsGroup.style.filter = '';
-            if (nodesGroup) nodesGroup.style.filter = '';
-        }
+        // NOTE: Dynamic SVG drop-shadow filter adjustments and dynamic hue-rotations are removed 
+        // from the 60fps frame loop to eliminate paint bottlenecks, letting GPU accelerate the paths.
 
         // Coordinate vibration: replace random white-noise jumps with smooth, high-frequency physical vibrations
         nodes.forEach((node, idx) => {
